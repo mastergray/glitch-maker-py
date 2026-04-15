@@ -18,8 +18,7 @@ import numpy as np
 
 from audio import AudioFeatures
 from video import probe, open_reader, open_writer
-from effects import REGISTRY
-from effects.section_swap import SectionSwap
+from effects import REGISTRY, PARAMETRIC
 
 
 def _extract_audio(video_path: str) -> str:
@@ -35,13 +34,38 @@ def _extract_audio(video_path: str) -> str:
     return tmp.name
 
 
-def build_stack(names, swap_with):
+def _parse_color(s: str) -> tuple[int, int, int]:
+    parts = s.split(',')
+    if len(parts) != 3:
+        raise SystemExit(f'--tear-color expects "R,G,B", got {s!r}')
+    try:
+        vals = tuple(int(p.strip()) for p in parts)
+    except ValueError:
+        raise SystemExit(f'--tear-color values must be integers, got {s!r}')
+    if not all(0 <= v <= 255 for v in vals):
+        raise SystemExit(f'--tear-color values must be in [0,255], got {s!r}')
+    return vals
+
+
+def build_stack(names, args):
     stack = []
     for name in names:
-        if name == 'section_swap':
-            if not swap_with:
-                raise SystemExit('section_swap requires --swap-with PATH')
-            stack.append(('section_swap', SectionSwap(swap_with)))
+        if name == 'clip_cut':
+            if not args.clip_cut_with:
+                raise SystemExit('clip_cut requires --clip-cut-with PATH')
+            stack.append((name, PARAMETRIC['clip_cut'](args.clip_cut_with)))
+        elif name == 'tear':
+            if args.tear_source == 'clip' and not args.tear_clip:
+                raise SystemExit('tear source=clip requires --tear-clip PATH')
+            stack.append((name, PARAMETRIC['tear'](
+                source=args.tear_source,
+                clip_path=args.tear_clip,
+                color=_parse_color(args.tear_color),
+                opacity=args.tear_opacity,
+                orientation=args.tear_orientation,
+                length_pct=args.tear_length_pct,
+                count_pct=args.tear_count_pct,
+            )))
         elif name in REGISTRY:
             stack.append((name, REGISTRY[name]()))
         else:
@@ -50,7 +74,7 @@ def build_stack(names, swap_with):
 
 
 def render(source_path: str, out_path: str, effects: list[str],
-           swap_with: str | None = None, audio_path: str | None = None,
+           stack_args, audio_path: str | None = None,
            seed: int | None = None, crf: int = 18,
            profile_path: str | None = None):
     if seed is None:
@@ -68,7 +92,7 @@ def render(source_path: str, out_path: str, effects: list[str],
     section_frames = set(af.section_change_frames)
     print(f'  duration={af.duration_sec:.2f}s sections={len(section_frames)} beats={int(af.beat.sum())}')
 
-    stack = build_stack(effects, swap_with)
+    stack = build_stack(effects, stack_args)
     print(f'[stack] {[n for n, _ in stack]}')
 
     reader, frame_nbytes = open_reader(source_path, meta)
@@ -124,8 +148,7 @@ def render(source_path: str, out_path: str, effects: list[str],
                   'width': meta.width, 'height': meta.height,
                   'fps': meta.fps, 'n_frames': i},
         'output': {'path': os.path.abspath(out_path), 'crf': crf},
-        'settings': {'seed': seed, 'effects': list(effects),
-                     'swap_with': swap_with},
+        'settings': {'seed': seed, 'effects': list(effects)},
         'audio_analysis_summary': {
             'beats': int(af.beat.sum()),
             'downbeats': int(af.downbeat.sum()),
@@ -155,7 +178,7 @@ def render(source_path: str, out_path: str, effects: list[str],
 
 
 def main():
-    effect_names = sorted(list(REGISTRY.keys()) + ['section_swap'])
+    effect_names = sorted(list(REGISTRY.keys()) + list(PARAMETRIC.keys()))
     epilog = 'Available effects:\n  ' + ', '.join(effect_names)
     p = argparse.ArgumentParser(
         description='Glitch-maker — audio-reactive glitch effects for video',
@@ -166,8 +189,6 @@ def main():
     p.add_argument('output', help='output MP4')
     p.add_argument('--effects', nargs='+', required=True,
                    help='ordered stack of effects to apply (see list below)')
-    p.add_argument('--swap-with', default=None,
-                   help='secondary video path; required when "section_swap" is in --effects')
     p.add_argument('--audio', default=None,
                    help='override audio source (default: extract from --source)')
     p.add_argument('--seed', type=int, default=None,
@@ -179,9 +200,31 @@ def main():
     p.add_argument('--no-profile', action='store_true',
                    help='skip writing the profile JSON')
 
+    cut_grp = p.add_argument_group('clip_cut options')
+    cut_grp.add_argument('--clip-cut-with', default=None,
+                         help='secondary video path; required when "clip_cut" is in --effects')
+
+    tear_grp = p.add_argument_group('tear options')
+    tear_grp.add_argument('--tear-source', choices=['clip', 'color'], default='clip',
+                          help='what fills the tear strips (default clip)')
+    tear_grp.add_argument('--tear-clip', default=None,
+                          help='secondary video path when --tear-source=clip')
+    tear_grp.add_argument('--tear-color', default='255,0,0',
+                          help='"R,G,B" triple when --tear-source=color (default 255,0,0)')
+    tear_grp.add_argument('--tear-opacity', type=float, default=1.0,
+                          help='blend amount 0.0..1.0 (default 1.0 = hard replace)')
+    tear_grp.add_argument('--tear-orientation', choices=['horizontal', 'vertical'],
+                          default='horizontal',
+                          help='strip orientation (default horizontal)')
+    tear_grp.add_argument('--tear-length-pct', type=float, default=80.0,
+                          help='max strip length as %% of axis; audio scales 0..this (default 80)')
+    tear_grp.add_argument('--tear-count-pct', type=float, default=5.0,
+                          help='max strip count as %% of axis; audio scales 0..this (default 5)')
+
     args = p.parse_args()
 
-    unknown = [e for e in args.effects if e not in REGISTRY and e != 'section_swap']
+    valid = set(REGISTRY) | set(PARAMETRIC)
+    unknown = [e for e in args.effects if e not in valid]
     if unknown:
         p.error(f"unknown effect(s): {', '.join(unknown)}\n  valid: {', '.join(effect_names)}")
 
@@ -194,7 +237,7 @@ def main():
         profile_path = base + '.profile.json'
 
     render(args.source, args.output, args.effects,
-           swap_with=args.swap_with, audio_path=args.audio,
+           stack_args=args, audio_path=args.audio,
            seed=args.seed, crf=args.crf, profile_path=profile_path)
 
 

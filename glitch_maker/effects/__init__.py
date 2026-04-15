@@ -1,12 +1,13 @@
 """Effect registry — each entry is a zero-arg factory for an effect instance.
 
-SectionSwap takes a secondary video path so it isn't zero-arg; render.py
-handles that specially when --swap-with is supplied.
+PARAMETRIC lists effects that take constructor args; render.py handles their
+construction specially (CLI flags → kwargs).
 """
 from .pixel_sort import PixelSort
 from .databend import Databend
 from .chromatic import Chromatic
-from .section_swap import SectionSwap
+from .clip_cut import ClipCut
+from .tear import Tear
 
 
 REGISTRY = {
@@ -15,7 +16,7 @@ REGISTRY = {
     'chromatic': Chromatic,
 }
 
-# Effects requiring constructor args live here for --help discoverability.
 PARAMETRIC = {
-    'section_swap': SectionSwap,
+    'clip_cut': ClipCut,
+    'tear': Tear,
 }
