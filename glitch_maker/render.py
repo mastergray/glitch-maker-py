@@ -90,7 +90,8 @@ def render(source_path: str, out_path: str, effects: list[str],
            stack_args, audio_path: str | None = None,
            seed: int | None = None, crf: int = 18,
            profile_path: str | None = None,
-           accumulate: bool = False, accumulate_reset_sec: float = 2.0):
+           accumulate: bool = False, accumulate_reset_sec: float = 2.0,
+           accumulate_bleed: float = 0.0):
     if seed is None:
         seed = int.from_bytes(os.urandom(4), 'big')
     np.random.seed(seed)
@@ -115,8 +116,10 @@ def render(source_path: str, out_path: str, effects: list[str],
     print(f'[render] writing {out_path}')
     if accumulate:
         reset_every = max(1, int(round(accumulate_reset_sec * meta.fps)))
+        bleed = float(np.clip(accumulate_bleed, 0.0, 1.0))
         print(f'[render] accumulate mode: reset every {reset_every} frames '
-              f'({accumulate_reset_sec:.2f}s) or on section_change')
+              f'({accumulate_reset_sec:.2f}s) or on section_change; '
+              f'bleed={bleed:.2f}')
     persistent: np.ndarray | None = None
     frames_since_reset = 0
     t0 = time.time()
@@ -138,7 +141,14 @@ def render(source_path: str, out_path: str, effects: list[str],
                 if want_reset:
                     persistent = source_frame
                     frames_since_reset = 0
-                frame = persistent.copy()
+                if bleed > 0.0:
+                    # Mix fresh source into accumulated state so animation flows
+                    # through while old damage persists.
+                    blended = (bleed * source_frame.astype(np.float32)
+                               + (1.0 - bleed) * persistent.astype(np.float32))
+                    frame = np.clip(blended, 0, 255).astype(np.uint8)
+                else:
+                    frame = persistent.copy()
             else:
                 frame = source_frame
 
@@ -241,6 +251,10 @@ def main():
     p.add_argument('--accumulate-reset-sec', type=float, default=2.0,
                    help='[accumulate mode] max seconds between resets to fresh source '
                         '(section_change also triggers reset). default 2.0')
+    p.add_argument('--accumulate-bleed', type=float, default=0.0,
+                   help='[accumulate mode] fraction 0..1 of fresh source mixed in per frame. '
+                        '0.0 = pure freeze (default), 0.3 = animation flows through while '
+                        'old damage lingers, 1.0 = no accumulation')
 
     cut_grp = p.add_argument_group('clip_cut options')
     cut_grp.add_argument('--clip-cut-with', default=None,
@@ -312,7 +326,8 @@ def main():
            stack_args=args, audio_path=args.audio,
            seed=args.seed, crf=args.crf, profile_path=profile_path,
            accumulate=args.accumulate,
-           accumulate_reset_sec=args.accumulate_reset_sec)
+           accumulate_reset_sec=args.accumulate_reset_sec,
+           accumulate_bleed=args.accumulate_bleed)
 
 
 if __name__ == '__main__':
