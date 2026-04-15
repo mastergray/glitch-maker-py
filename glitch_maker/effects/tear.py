@@ -12,15 +12,16 @@ from ._frame import ClipReader
 
 
 class Tear:
-    def __init__(self, source: str = 'clip', clip_path: str | None = None,
+    def __init__(self, source: str = 'displace', clip_path: str | None = None,
                  color: tuple[int, int, int] = (255, 0, 0),
                  opacity: float = 1.0,
                  orientation: str = 'horizontal',
                  length_pct: float = 80.0,
                  thickness_pct: float = 15.0,
-                 count_pct: float = 2.0):
-        if source not in ('clip', 'color'):
-            raise ValueError(f'source must be clip or color, got {source!r}')
+                 count_pct: float = 2.0,
+                 displace_max_pct: float = 10.0):
+        if source not in ('clip', 'color', 'displace'):
+            raise ValueError(f'source must be clip/color/displace, got {source!r}')
         if orientation not in ('horizontal', 'vertical'):
             raise ValueError(f'orientation must be horizontal or vertical, got {orientation!r}')
         if source == 'clip' and clip_path is None:
@@ -33,6 +34,7 @@ class Tear:
         self.length_pct = float(np.clip(length_pct, 0.0, 100.0))
         self.thickness_pct = float(np.clip(thickness_pct, 0.0, 100.0))
         self.count_pct = float(np.clip(count_pct, 0.0, 100.0))
+        self.displace_max_pct = float(np.clip(displace_max_pct, 0.0, 100.0))
         self.reader: ClipReader | None = ClipReader(clip_path) if source == 'clip' else None
         self.rng = np.random.default_rng()
 
@@ -68,8 +70,9 @@ class Tear:
             return frame
 
         other = self.reader.read(frame.shape) if self.reader is not None else None
+        base = frame  # read from original base for displace source (before writes)
 
-        out = frame if self.opacity == 1.0 else frame.copy()
+        out = frame.copy()  # displace needs a separate write target so reads stay clean
         opacity = self.opacity
 
         thick_starts = self.rng.integers(0, thickness_axis, size=count)
@@ -77,17 +80,36 @@ class Tear:
         len_starts = self.rng.integers(0, max(1, length_axis), size=count)
         lengths = self.rng.integers(1, max_length + 1, size=count)
 
-        for ts, th, ls, ln in zip(thick_starts, thicknesses, len_starts, lengths):
+        # Displace offsets per-block: random per-block, magnitude scales with activity.
+        if self.source == 'displace':
+            max_off_y = int(H * self.displace_max_pct / 100.0 * activity)
+            max_off_x = int(W * self.displace_max_pct / 100.0 * activity)
+            dy_arr = (self.rng.integers(-max_off_y, max_off_y + 1, size=count)
+                      if max_off_y > 0 else np.zeros(count, dtype=int))
+            dx_arr = (self.rng.integers(-max_off_x, max_off_x + 1, size=count)
+                      if max_off_x > 0 else np.zeros(count, dtype=int))
+        else:
+            dy_arr = dx_arr = np.zeros(count, dtype=int)
+
+        for k in range(count):
+            ts, th, ls, ln = thick_starts[k], thicknesses[k], len_starts[k], lengths[k]
             t_end = min(thickness_axis, ts + th)
             l_end = min(length_axis, ls + ln)
             if self.orientation == 'horizontal':
-                dst = out[ts:t_end, ls:l_end]
-                src = (other[ts:t_end, ls:l_end] if other is not None
-                       else np.broadcast_to(self.color, dst.shape))
+                y0, y1, x0, x1 = ts, t_end, ls, l_end
             else:
-                dst = out[ls:l_end, ts:t_end]
-                src = (other[ls:l_end, ts:t_end] if other is not None
-                       else np.broadcast_to(self.color, dst.shape))
+                y0, y1, x0, x1 = ls, l_end, ts, t_end
+            dst = out[y0:y1, x0:x1]
+
+            if self.source == 'displace':
+                # Pull base pixels from a shifted region, wrapping at frame edges.
+                yy = (np.arange(y0, y1) + dy_arr[k]) % H
+                xx = (np.arange(x0, x1) + dx_arr[k]) % W
+                src = base[yy[:, None], xx[None, :]]
+            elif self.source == 'clip':
+                src = other[y0:y1, x0:x1]
+            else:  # color
+                src = np.broadcast_to(self.color, dst.shape)
 
             if opacity >= 1.0:
                 np.copyto(dst, src)

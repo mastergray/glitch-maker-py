@@ -66,6 +66,7 @@ def build_stack(names, args):
                 length_pct=args.tear_length_pct,
                 thickness_pct=args.tear_thickness_pct,
                 count_pct=args.tear_count_pct,
+                displace_max_pct=args.tear_displace_max_pct,
             )))
         elif name in REGISTRY:
             stack.append((name, REGISTRY[name]()))
@@ -206,8 +207,10 @@ def main():
                          help='secondary video path; required when "clip_cut" is in --effects')
 
     tear_grp = p.add_argument_group('tear options')
-    tear_grp.add_argument('--tear-source', choices=['clip', 'color'], default='clip',
-                          help='what fills the tear strips (default clip)')
+    tear_grp.add_argument('--tear-source', choices=['displace', 'clip', 'color'],
+                          default='displace',
+                          help='what fills the tear blocks (default "displace" = shifted base; '
+                               '"clip" = secondary video; "color" = solid color)')
     tear_grp.add_argument('--tear-clip', default=None,
                           help='secondary video path when --tear-source=clip')
     tear_grp.add_argument('--tear-color', default='255,0,0',
@@ -226,6 +229,9 @@ def main():
     tear_grp.add_argument('--tear-count-pct', type=float, default=2.0,
                           help='max block count as %% of thickness axis; audio scales 0..this '
                                '(default 2)')
+    tear_grp.add_argument('--tear-displace-max-pct', type=float, default=10.0,
+                          help='[displace source] max random block offset as %% of axis; '
+                               'audio scales 0..this (default 10)')
 
     args = p.parse_args()
 
