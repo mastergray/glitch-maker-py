@@ -16,7 +16,7 @@ class Tear:
                  color: tuple[int, int, int] = (255, 0, 0),
                  opacity: float = 1.0,
                  orientation: str = 'horizontal',
-                 length_pct: float = 50.0,
+                 length_pct: float = 80.0,
                  thickness_pct: float = 15.0,
                  count_pct: float = 2.0,
                  displace_max_pct: float = 10.0):
@@ -77,7 +77,10 @@ class Tear:
 
         thick_starts = self.rng.integers(0, thickness_axis, size=count)
         thicknesses = self.rng.integers(1, max_thickness + 1, size=count)
-        lengths = self.rng.integers(1, max_length + 1, size=count)
+        # Bias lengths toward max so we consistently see long edge-anchored
+        # trails rather than lots of tiny invisible ones. Minimum is 50% of
+        # max_length, so every tear is visibly meaningful.
+        lengths = np.maximum(1, (self.rng.uniform(0.5, 1.0, size=count) * max_length).astype(int))
         # Each tear originates from a random edge (0 = near edge, 1 = far edge)
         # and extends inward by `length`. Produces the classic signal-tear look
         # where bands break off from an edge rather than floating mid-frame.

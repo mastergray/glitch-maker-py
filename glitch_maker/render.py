@@ -220,10 +220,10 @@ def main():
     tear_grp.add_argument('--tear-orientation', choices=['horizontal', 'vertical'],
                           default='horizontal',
                           help='strip orientation (default horizontal)')
-    tear_grp.add_argument('--tear-length-pct', type=float, default=50.0,
+    tear_grp.add_argument('--tear-length-pct', type=float, default=80.0,
                           help='max tear length as %% of axis from the originating edge; '
-                               'audio scales 0..this (default 50). Set to 100 for full-axis '
-                               'bands, lower for shorter edge-anchored trails.')
+                               'audio scales 0..this (default 80). Per-tear length is '
+                               'biased toward the max so trails stay visibly long.')
     tear_grp.add_argument('--tear-thickness-pct', type=float, default=15.0,
                           help='max block thickness (perpendicular to strip direction) as %% '
                                'of the other axis; audio scales 0..this (default 15)')
