@@ -224,15 +224,15 @@ def main():
                           help='max tear length as %% of axis from the originating edge; '
                                'audio scales 0..this (default 80). Per-tear length is '
                                'biased toward the max so trails stay visibly long.')
-    tear_grp.add_argument('--tear-thickness-pct', type=float, default=15.0,
+    tear_grp.add_argument('--tear-thickness-pct', type=float, default=25.0,
                           help='max block thickness (perpendicular to strip direction) as %% '
-                               'of the other axis; audio scales 0..this (default 15)')
-    tear_grp.add_argument('--tear-count-pct', type=float, default=2.0,
+                               'of the other axis; audio scales 0..this (default 25)')
+    tear_grp.add_argument('--tear-count-pct', type=float, default=5.0,
                           help='max block count as %% of thickness axis; audio scales 0..this '
-                               '(default 2)')
-    tear_grp.add_argument('--tear-displace-max-pct', type=float, default=10.0,
+                               '(default 5)')
+    tear_grp.add_argument('--tear-displace-max-pct', type=float, default=25.0,
                           help='[displace source] max random block offset as %% of axis; '
-                               'audio scales 0..this (default 10)')
+                               'audio scales 0..this (default 25)')
 
     args = p.parse_args()
 

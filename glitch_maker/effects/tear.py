@@ -17,9 +17,9 @@ class Tear:
                  opacity: float = 1.0,
                  orientation: str = 'horizontal',
                  length_pct: float = 80.0,
-                 thickness_pct: float = 15.0,
-                 count_pct: float = 2.0,
-                 displace_max_pct: float = 10.0):
+                 thickness_pct: float = 25.0,
+                 count_pct: float = 5.0,
+                 displace_max_pct: float = 25.0):
         if source not in ('clip', 'color', 'displace'):
             raise ValueError(f'source must be clip/color/displace, got {source!r}')
         if orientation not in ('horizontal', 'vertical'):
