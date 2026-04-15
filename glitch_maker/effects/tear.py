@@ -77,8 +77,12 @@ class Tear:
 
         thick_starts = self.rng.integers(0, thickness_axis, size=count)
         thicknesses = self.rng.integers(1, max_thickness + 1, size=count)
-        len_starts = self.rng.integers(0, max(1, length_axis), size=count)
         lengths = self.rng.integers(1, max_length + 1, size=count)
+        # Each tear originates from a random edge (0 = near edge, 1 = far edge)
+        # and extends inward by `length`. Produces the classic signal-tear look
+        # where bands break off from an edge rather than floating mid-frame.
+        edges = self.rng.integers(0, 2, size=count)
+        len_starts = np.where(edges == 0, 0, np.maximum(0, length_axis - lengths))
 
         # Displace offsets: shift ONLY along the length axis. Horizontal tears
         # shift horizontally; vertical tears shift vertically. Shifting on the
