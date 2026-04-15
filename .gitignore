@@ -1,0 +1,15 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Test renders — regeneratable from render.py
+glitch_maker/test/*.mp4
+glitch_maker/test/*.mkv
+glitch_maker/test/*.webm
+glitch_maker/test/*.profile.json
+glitch_maker/test/*.wav
+
+# OS noise
+.DS_Store
+Thumbs.db
