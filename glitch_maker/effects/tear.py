@@ -16,7 +16,7 @@ class Tear:
                  color: tuple[int, int, int] = (255, 0, 0),
                  opacity: float = 1.0,
                  orientation: str = 'horizontal',
-                 length_pct: float = 100.0,
+                 length_pct: float = 50.0,
                  thickness_pct: float = 15.0,
                  count_pct: float = 2.0,
                  displace_max_pct: float = 10.0):
