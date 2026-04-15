@@ -68,6 +68,17 @@ def build_stack(names, args):
                 count_pct=args.tear_count_pct,
                 displace_max_pct=args.tear_displace_max_pct,
             )))
+        elif name == 'pixel_scramble':
+            stack.append((name, PARAMETRIC['pixel_scramble'](
+                count_pct=args.pscramble_count_pct,
+                size_pct=args.pscramble_size_pct,
+            )))
+        elif name == 'jpeg_corrupt':
+            stack.append((name, PARAMETRIC['jpeg_corrupt'](
+                count_pct=args.jpeg_count_pct,
+                size_pct=args.jpeg_size_pct,
+                quality=args.jpeg_quality,
+            )))
         elif name in REGISTRY:
             stack.append((name, REGISTRY[name]()))
         else:
@@ -233,6 +244,25 @@ def main():
     tear_grp.add_argument('--tear-displace-max-pct', type=float, default=25.0,
                           help='[displace source] max random block offset as %% of axis; '
                                'audio scales 0..this (default 25)')
+
+    ps_grp = p.add_argument_group('pixel_scramble options')
+    ps_grp.add_argument('--pscramble-count-pct', type=float, default=3.0,
+                        help='max scramble block count as %% of height; audio scales 0..this '
+                             '(default 3)')
+    ps_grp.add_argument('--pscramble-size-pct', type=float, default=15.0,
+                        help='max block size as %% of min(W,H); audio scales 0..this '
+                             '(default 15)')
+
+    jp_grp = p.add_argument_group('jpeg_corrupt options')
+    jp_grp.add_argument('--jpeg-count-pct', type=float, default=3.0,
+                        help='max corruption block count as %% of height; audio scales 0..this '
+                             '(default 3)')
+    jp_grp.add_argument('--jpeg-size-pct', type=float, default=20.0,
+                        help='max block size as %% of min(W,H); audio scales 0..this '
+                             '(default 20)')
+    jp_grp.add_argument('--jpeg-quality', type=int, default=5,
+                        help='JPEG quality level inside corrupted blocks (1=extreme artifacts, '
+                             '100=clean). default 5')
 
     args = p.parse_args()
 

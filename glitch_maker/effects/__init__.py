@@ -8,6 +8,8 @@ from .databend import Databend
 from .chromatic import Chromatic
 from .clip_cut import ClipCut
 from .tear import Tear
+from .pixel_scramble import PixelScramble
+from .jpeg_corrupt import JpegCorrupt
 
 
 REGISTRY = {
@@ -19,4 +21,6 @@ REGISTRY = {
 PARAMETRIC = {
     'clip_cut': ClipCut,
     'tear': Tear,
+    'pixel_scramble': PixelScramble,
+    'jpeg_corrupt': JpegCorrupt,
 }
