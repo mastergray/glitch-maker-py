@@ -89,7 +89,8 @@ def build_stack(names, args):
 def render(source_path: str, out_path: str, effects: list[str],
            stack_args, audio_path: str | None = None,
            seed: int | None = None, crf: int = 18,
-           profile_path: str | None = None):
+           profile_path: str | None = None,
+           accumulate: bool = False, accumulate_reset_sec: float = 2.0):
     if seed is None:
         seed = int.from_bytes(os.urandom(4), 'big')
     np.random.seed(seed)
@@ -112,6 +113,12 @@ def render(source_path: str, out_path: str, effects: list[str],
     writer = open_writer(source_path, out_path, meta, crf=crf)
 
     print(f'[render] writing {out_path}')
+    if accumulate:
+        reset_every = max(1, int(round(accumulate_reset_sec * meta.fps)))
+        print(f'[render] accumulate mode: reset every {reset_every} frames '
+              f'({accumulate_reset_sec:.2f}s) or on section_change')
+    persistent: np.ndarray | None = None
+    frames_since_reset = 0
     t0 = time.time()
     i = 0
     try:
@@ -119,15 +126,30 @@ def render(source_path: str, out_path: str, effects: list[str],
             raw = reader.stdout.read(frame_nbytes)
             if not raw or len(raw) < frame_nbytes:
                 break
-            frame = np.frombuffer(raw, dtype=np.uint8).reshape(meta.height, meta.width, 3).copy()
+            source_frame = np.frombuffer(raw, dtype=np.uint8).reshape(meta.height, meta.width, 3).copy()
 
             feats = af.features_at(i)
             feats['section_change'] = i in section_frames
+
+            if accumulate:
+                want_reset = (i == 0
+                              or feats['section_change']
+                              or frames_since_reset >= reset_every)
+                if want_reset:
+                    persistent = source_frame
+                    frames_since_reset = 0
+                frame = persistent.copy()
+            else:
+                frame = source_frame
 
             for _, eff in stack:
                 frame = eff.step(frame, feats)
                 if frame.dtype != np.uint8:
                     frame = frame.astype(np.uint8)
+
+            if accumulate:
+                persistent = frame
+                frames_since_reset += 1
 
             writer.stdin.write(frame.tobytes())
             i += 1
@@ -212,6 +234,13 @@ def main():
                    help='path to write render profile JSON (default: <output>.profile.json)')
     p.add_argument('--no-profile', action='store_true',
                    help='skip writing the profile JSON')
+    p.add_argument('--accumulate', action='store_true',
+                   help='effects compound frame-over-frame instead of starting fresh. '
+                        'Between resets the source "freezes" and damage accumulates, '
+                        'producing true destruction rather than per-frame overlay.')
+    p.add_argument('--accumulate-reset-sec', type=float, default=2.0,
+                   help='[accumulate mode] max seconds between resets to fresh source '
+                        '(section_change also triggers reset). default 2.0')
 
     cut_grp = p.add_argument_group('clip_cut options')
     cut_grp.add_argument('--clip-cut-with', default=None,
@@ -281,7 +310,9 @@ def main():
 
     render(args.source, args.output, args.effects,
            stack_args=args, audio_path=args.audio,
-           seed=args.seed, crf=args.crf, profile_path=profile_path)
+           seed=args.seed, crf=args.crf, profile_path=profile_path,
+           accumulate=args.accumulate,
+           accumulate_reset_sec=args.accumulate_reset_sec)
 
 
 if __name__ == '__main__':
