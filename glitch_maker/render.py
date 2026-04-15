@@ -64,6 +64,7 @@ def build_stack(names, args):
                 opacity=args.tear_opacity,
                 orientation=args.tear_orientation,
                 length_pct=args.tear_length_pct,
+                thickness_pct=args.tear_thickness_pct,
                 count_pct=args.tear_count_pct,
             )))
         elif name in REGISTRY:
@@ -217,9 +218,14 @@ def main():
                           default='horizontal',
                           help='strip orientation (default horizontal)')
     tear_grp.add_argument('--tear-length-pct', type=float, default=80.0,
-                          help='max strip length as %% of axis; audio scales 0..this (default 80)')
-    tear_grp.add_argument('--tear-count-pct', type=float, default=5.0,
-                          help='max strip count as %% of axis; audio scales 0..this (default 5)')
+                          help='max block length (along strip direction) as %% of axis; '
+                               'audio scales 0..this (default 80)')
+    tear_grp.add_argument('--tear-thickness-pct', type=float, default=15.0,
+                          help='max block thickness (perpendicular to strip direction) as %% '
+                               'of the other axis; audio scales 0..this (default 15)')
+    tear_grp.add_argument('--tear-count-pct', type=float, default=2.0,
+                          help='max block count as %% of thickness axis; audio scales 0..this '
+                               '(default 2)')
 
     args = p.parse_args()
 
