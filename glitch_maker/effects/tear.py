@@ -16,7 +16,7 @@ class Tear:
                  color: tuple[int, int, int] = (255, 0, 0),
                  opacity: float = 1.0,
                  orientation: str = 'horizontal',
-                 length_pct: float = 80.0,
+                 length_pct: float = 100.0,
                  thickness_pct: float = 15.0,
                  count_pct: float = 2.0,
                  displace_max_pct: float = 10.0):
@@ -80,14 +80,20 @@ class Tear:
         len_starts = self.rng.integers(0, max(1, length_axis), size=count)
         lengths = self.rng.integers(1, max_length + 1, size=count)
 
-        # Displace offsets per-block: random per-block, magnitude scales with activity.
+        # Displace offsets: shift ONLY along the length axis. Horizontal tears
+        # shift horizontally; vertical tears shift vertically. Shifting on the
+        # thickness axis makes bands look like 2D blocks instead of signal tears.
         if self.source == 'displace':
-            max_off_y = int(H * self.displace_max_pct / 100.0 * activity)
-            max_off_x = int(W * self.displace_max_pct / 100.0 * activity)
-            dy_arr = (self.rng.integers(-max_off_y, max_off_y + 1, size=count)
-                      if max_off_y > 0 else np.zeros(count, dtype=int))
-            dx_arr = (self.rng.integers(-max_off_x, max_off_x + 1, size=count)
-                      if max_off_x > 0 else np.zeros(count, dtype=int))
+            if self.orientation == 'horizontal':
+                max_off = int(W * self.displace_max_pct / 100.0 * activity)
+                dx_arr = (self.rng.integers(-max_off, max_off + 1, size=count)
+                          if max_off > 0 else np.zeros(count, dtype=int))
+                dy_arr = np.zeros(count, dtype=int)
+            else:
+                max_off = int(H * self.displace_max_pct / 100.0 * activity)
+                dy_arr = (self.rng.integers(-max_off, max_off + 1, size=count)
+                          if max_off > 0 else np.zeros(count, dtype=int))
+                dx_arr = np.zeros(count, dtype=int)
         else:
             dy_arr = dx_arr = np.zeros(count, dtype=int)
 
