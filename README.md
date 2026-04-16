@@ -28,7 +28,7 @@ audio. No additional install needed.
 
 ## Quick Start
 
-Run everything from `glitch_maker/`. Simplest invocation:
+Run everything from the repo root. Simplest invocation:
 
 ```
 python3 render.py input.mp4 output.mp4 --effects tear chromatic
@@ -418,7 +418,7 @@ Holds the secondary for ~30 frames then returns to primary. Unlike tear's
 
 ## Shipped recipes
 
-15 curated configs in `glitch_maker/recipes/`. Use with
+15 curated configs in `recipes/`. Use with
 `--config recipes/NAME.json`.
 
 | Recipe | Feel |
@@ -470,7 +470,7 @@ locally as needed.
 ## Project structure
 
 ```
-glitch_maker/
+glitch-maker-py/             (repo root)
   render.py                  # main CLI, scheduler, ffmpeg pipeline
   audio.py                   # AudioFeatures loader
   analyze_audio.py           # vendored analyzer (beats, onsets, sections)

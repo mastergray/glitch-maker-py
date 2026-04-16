@@ -4,13 +4,15 @@ __pycache__/
 *.pyo
 
 # Test renders — regeneratable from render.py
-glitch_maker/test/*.mp4
-glitch_maker/test/*.mkv
-glitch_maker/test/*.webm
-glitch_maker/test/*.profile.json
-glitch_maker/test/*.wav
+test/*.mp4
+test/*.mkv
+test/*.webm
+test/*.profile.json
+test/*.wav
+
+# Effects-guide output — regeneratable via build_effects_guide.py
+effects-guide/
 
 # OS noise
 .DS_Store
 Thumbs.db
-effects-guide/

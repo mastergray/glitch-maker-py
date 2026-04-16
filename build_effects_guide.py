@@ -1,9 +1,8 @@
 """Build a static HTML visual guide for every effect + shipped recipe.
 
 Renders one short clip per registered effect (with default params) plus one
-clip per recipe in glitch_maker/recipes/, then emits a dark-themed HTML page
-with hover-to-play video cards grouped by section. Run from the glitch_maker/
-directory.
+clip per recipe in recipes/, then emits a dark-themed HTML page
+with hover-to-play video cards grouped by section. Run from the repo root.
 
     python3 build_effects_guide.py [--output-dir DIR] [--source VIDEO] [--audio WAV]
 """
