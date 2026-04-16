@@ -281,6 +281,8 @@ def main() -> int:
                    help=f'source video (default: {DEFAULT_SOURCE})')
     p.add_argument('--audio', default=DEFAULT_AUDIO,
                    help='audio override (default: LANDR test clip)')
+    p.add_argument('--length', type=float, default=3.0,
+                   help='per-card clip length in seconds (default 3.0)')
     p.add_argument('--seed', type=int, default=42,
                    help='seed for reproducibility (default 42)')
     p.add_argument('--skip-existing', action='store_true',
@@ -306,6 +308,18 @@ def main() -> int:
     output_dir = Path(args.output_dir).resolve()
     clips_dir = output_dir / 'clips'
     clips_dir.mkdir(parents=True, exist_ok=True)
+
+    # Pre-slice source to --length so each per-effect render only processes the
+    # exact duration we want to showcase. One slice, reused for every card.
+    sliced_src = output_dir / f'_source_{int(args.length * 1000)}ms.mp4'
+    if not sliced_src.exists() or args.skip_existing is False:
+        print(f'[guide] slicing source to {args.length}s -> {sliced_src}')
+        subprocess.check_call([
+            'ffmpeg', '-y', '-v', 'error',
+            '-i', str(src), '-t', str(args.length), '-c', 'copy',
+            str(sliced_src),
+        ])
+    src = sliced_src
 
     # Discover effects (skip clip_cut — needs a secondary video; not suited to default guide)
     all_effects = sorted(fx for fx in PARAMETRIC if fx != 'clip_cut')
