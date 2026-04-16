@@ -86,6 +86,40 @@ def build_stack_from_args(names, args):
                 'modes': args.databend_modes,
                 'audio_scale': args.databend_audio_scale,
             }
+        elif name == 'channel_swap':
+            params = {
+                'count_pct': args.cswap_count_pct,
+                'size_pct': args.cswap_size_pct,
+                'mode': args.cswap_mode,
+                'audio_scale': args.cswap_audio_scale,
+            }
+        elif name == 'bit_crush':
+            params = {
+                'count_pct': args.bcrush_count_pct,
+                'size_pct': args.bcrush_size_pct,
+                'bits': args.bcrush_bits,
+                'audio_scale': args.bcrush_audio_scale,
+            }
+        elif name == 'invert_blocks':
+            params = {
+                'count_pct': args.invert_count_pct,
+                'size_pct': args.invert_size_pct,
+                'audio_scale': args.invert_audio_scale,
+            }
+        elif name == 'slitscan':
+            params = {
+                'direction': args.slitscan_direction,
+                'max_delay_frames': args.slitscan_max_delay,
+                'audio_scale': args.slitscan_audio_scale,
+            }
+        elif name == 'warp':
+            params = {
+                'amplitude_px': args.warp_amplitude,
+                'frequency': args.warp_frequency,
+                'speed': args.warp_speed,
+                'direction': args.warp_direction,
+                'audio_scale': args.warp_audio_scale,
+            }
         elif name == 'pixel_scramble':
             params = {
                 'count_pct': args.pscramble_count_pct,
@@ -432,6 +466,61 @@ def main():
     db_grp.add_argument('--databend-audio-scale', type=float, default=0.8,
                         help='how much audio scales count/size from minimum to full '
                              '(default 0.8)')
+
+    cs_grp = p.add_argument_group('channel_swap options')
+    cs_grp.add_argument('--cswap-count-pct', type=float, default=5.0,
+                        help='max swap-block count as %% of height (default 5)')
+    cs_grp.add_argument('--cswap-size-pct', type=float, default=15.0,
+                        help='max block size as %% of min(W,H) (default 15)')
+    cs_grp.add_argument('--cswap-mode', choices=['random', 'rb', 'rg', 'gb', 'rotate'],
+                        default='random',
+                        help='channel permutation per block: random (default, mixed), '
+                             'rb (swap R/B), rg, gb, or rotate (R->G->B->R)')
+    cs_grp.add_argument('--cswap-audio-scale', type=float, default=0.7,
+                        help='audio-reactivity strength (default 0.7)')
+
+    bc_grp = p.add_argument_group('bit_crush options')
+    bc_grp.add_argument('--bcrush-count-pct', type=float, default=3.0,
+                        help='max crush-block count as %% of height (default 3)')
+    bc_grp.add_argument('--bcrush-size-pct', type=float, default=20.0,
+                        help='max block size as %% of min(W,H) (default 20)')
+    bc_grp.add_argument('--bcrush-bits', type=int, default=2,
+                        help='top N bits per channel to keep (1=harshest 8 colors, 7=subtle). '
+                             'default 2 = 64 colors total')
+    bc_grp.add_argument('--bcrush-audio-scale', type=float, default=0.6,
+                        help='audio-reactivity strength (default 0.6)')
+
+    iv_grp = p.add_argument_group('invert_blocks options')
+    iv_grp.add_argument('--invert-count-pct', type=float, default=3.0,
+                        help='max invert-block count as %% of height (default 3)')
+    iv_grp.add_argument('--invert-size-pct', type=float, default=20.0,
+                        help='max block size as %% of min(W,H) (default 20)')
+    iv_grp.add_argument('--invert-audio-scale', type=float, default=0.6,
+                        help='audio-reactivity strength (default 0.6)')
+
+    ss_grp = p.add_argument_group('slitscan options')
+    ss_grp.add_argument('--slitscan-direction', choices=['horizontal', 'vertical'],
+                        default='horizontal',
+                        help='rows sampled from past (horizontal) or columns (vertical). '
+                             'default horizontal')
+    ss_grp.add_argument('--slitscan-max-delay', type=int, default=30,
+                        help='max frames of history; bottom row shows frame N frames ago '
+                             '(default 30 = 0.5s at 60fps)')
+    ss_grp.add_argument('--slitscan-audio-scale', type=float, default=0.5,
+                        help='audio-reactivity strength for the delay amount (default 0.5)')
+
+    wp_grp = p.add_argument_group('warp options')
+    wp_grp.add_argument('--warp-amplitude', type=float, default=20.0,
+                        help='max displacement in pixels at full audio (default 20)')
+    wp_grp.add_argument('--warp-frequency', type=float, default=0.02,
+                        help='sine-wave frequency (default 0.02; higher = more ripples)')
+    wp_grp.add_argument('--warp-speed', type=float, default=3.0,
+                        help='how fast the wave moves (default 3.0)')
+    wp_grp.add_argument('--warp-direction', choices=['horizontal', 'vertical', 'both'],
+                        default='horizontal',
+                        help='which axis to warp along (default horizontal)')
+    wp_grp.add_argument('--warp-audio-scale', type=float, default=0.5,
+                        help='audio-reactivity strength for the amplitude (default 0.5)')
 
     args = p.parse_args()
 
