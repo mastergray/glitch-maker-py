@@ -108,6 +108,7 @@ def build_stack_from_args(names, args):
                 'audio_scale': args.cswap_audio_scale,
                 'shape': args.cswap_shape,
                 'orientation': args.cswap_orientation,
+                'band_length_pct': args.cswap_band_length_pct,
                 'delay_frames': args.cswap_delay_frames,
             }
         elif name == 'bit_crush':
@@ -118,6 +119,7 @@ def build_stack_from_args(names, args):
                 'audio_scale': args.bcrush_audio_scale,
                 'shape': args.bcrush_shape,
                 'orientation': args.bcrush_orientation,
+                'band_length_pct': args.bcrush_band_length_pct,
                 'delay_frames': args.bcrush_delay_frames,
             }
         elif name == 'invert_blocks':
@@ -127,6 +129,7 @@ def build_stack_from_args(names, args):
                 'audio_scale': args.invert_audio_scale,
                 'shape': args.invert_shape,
                 'orientation': args.invert_orientation,
+                'band_length_pct': args.invert_band_length_pct,
                 'delay_frames': args.invert_delay_frames,
             }
         elif name == 'slitscan':
@@ -156,6 +159,7 @@ def build_stack_from_args(names, args):
                 'size_pct': args.pscramble_size_pct,
                 'shape': args.pscramble_shape,
                 'orientation': args.pscramble_orientation,
+                'band_length_pct': args.pscramble_band_length_pct,
                 'delay_frames': args.pscramble_delay_frames,
             }
         elif name == 'jpeg_corrupt':
@@ -165,6 +169,7 @@ def build_stack_from_args(names, args):
                 'quality': args.jpeg_quality,
                 'shape': args.jpeg_shape,
                 'orientation': args.jpeg_orientation,
+                'band_length_pct': args.jpeg_band_length_pct,
                 'delay_frames': args.jpeg_delay_frames,
             }
         elif name == 'pixel_sort':
@@ -455,6 +460,8 @@ def main():
     ps_grp.add_argument('--pscramble-orientation', choices=['horizontal', 'vertical'],
                         default='horizontal',
                         help='[band shape] strip orientation (default horizontal)')
+    ps_grp.add_argument('--pscramble-band-length-pct', type=float, default=100.0,
+                        help='[band shape] strip length as %% of axis (default 100 = full)')
     ps_grp.add_argument('--pscramble-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 
@@ -475,6 +482,8 @@ def main():
     jp_grp.add_argument('--jpeg-orientation', choices=['horizontal', 'vertical'],
                         default='horizontal',
                         help='[band shape] strip orientation (default horizontal)')
+    jp_grp.add_argument('--jpeg-band-length-pct', type=float, default=100.0,
+                        help='[band shape] strip length as %% of axis (default 100 = full)')
     jp_grp.add_argument('--jpeg-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 
@@ -539,6 +548,8 @@ def main():
     cs_grp.add_argument('--cswap-orientation', choices=['horizontal', 'vertical'],
                         default='horizontal',
                         help='[band shape] strip orientation (default horizontal)')
+    cs_grp.add_argument('--cswap-band-length-pct', type=float, default=100.0,
+                        help='[band shape] strip length as %% of axis (default 100 = full)')
     cs_grp.add_argument('--cswap-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 
@@ -559,6 +570,8 @@ def main():
     bc_grp.add_argument('--bcrush-orientation', choices=['horizontal', 'vertical'],
                         default='horizontal',
                         help='[band shape] strip orientation (default horizontal)')
+    bc_grp.add_argument('--bcrush-band-length-pct', type=float, default=100.0,
+                        help='[band shape] strip length as %% of axis (default 100 = full)')
     bc_grp.add_argument('--bcrush-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 
@@ -576,6 +589,8 @@ def main():
     iv_grp.add_argument('--invert-orientation', choices=['horizontal', 'vertical'],
                         default='horizontal',
                         help='[band shape] strip orientation (default horizontal)')
+    iv_grp.add_argument('--invert-band-length-pct', type=float, default=100.0,
+                        help='[band shape] strip length as %% of axis (default 100 = full)')
     iv_grp.add_argument('--invert-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 

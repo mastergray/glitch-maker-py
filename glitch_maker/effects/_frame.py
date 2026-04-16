@@ -18,7 +18,8 @@ def luminance(frame: np.ndarray) -> np.ndarray:
 
 
 def pick_block_masks(shape: str, count: int, H: int, W: int, max_size: int,
-                     rng: np.random.Generator, orientation: str = 'horizontal') -> list:
+                     rng: np.random.Generator, orientation: str = 'horizontal',
+                     band_length_pct: float = 100.0) -> list:
     """Pick N random block positions with optional per-block masks.
 
     Returns list of (bbox, mask) pairs where bbox = (y0, y1, x0, x1) and mask
@@ -29,8 +30,10 @@ def pick_block_masks(shape: str, count: int, H: int, W: int, max_size: int,
       rectangle  random w x h rectangles (mask=None)
       square     random side, equal w = h (mask=None)
       circle     random radius disks (mask is a circular bool array)
-      band       full-width horizontal (or full-height vertical) strips;
-                 orientation selects axis. Useful for scanline-style damage.
+      band       horizontal (or vertical) strips; orientation selects axis.
+                 band_length_pct controls how much of the axis each strip
+                 spans (100 = full edge-to-edge, 50 = half axis, etc.).
+                 Partial-length bands get a random start position.
     """
     if shape not in ('rectangle', 'square', 'circle', 'band'):
         raise ValueError(f'shape must be rectangle/square/circle/band, got {shape!r}')
@@ -56,10 +59,20 @@ def pick_block_masks(shape: str, count: int, H: int, W: int, max_size: int,
             thickness = int(rng.integers(4, max_size + 1))
             if orientation == 'horizontal':
                 y = int(rng.integers(0, max(1, H - thickness)))
-                blocks.append(((y, y + thickness, 0, W), None))
+                if band_length_pct >= 100.0:
+                    blocks.append(((y, y + thickness, 0, W), None))
+                else:
+                    length = max(4, int(W * band_length_pct / 100.0))
+                    x = int(rng.integers(0, max(1, W - length)))
+                    blocks.append(((y, y + thickness, x, x + length), None))
             else:
                 x = int(rng.integers(0, max(1, W - thickness)))
-                blocks.append(((0, H, x, x + thickness), None))
+                if band_length_pct >= 100.0:
+                    blocks.append(((0, H, x, x + thickness), None))
+                else:
+                    length = max(4, int(H * band_length_pct / 100.0))
+                    y = int(rng.integers(0, max(1, H - length)))
+                    blocks.append(((y, y + length, x, x + thickness), None))
         else:  # circle
             r = int(rng.integers(2, max(3, max_size // 2 + 1)))
             cy = int(rng.integers(r, max(r + 1, H - r)))
