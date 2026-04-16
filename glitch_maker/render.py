@@ -140,6 +140,13 @@ def build_stack_from_args(names, args):
                 'direction': args.warp_direction,
                 'audio_scale': args.warp_audio_scale,
             }
+        elif name == 'noise':
+            params = {
+                'amount': args.noise_amount,
+                'type': args.noise_type,
+                'mono': args.noise_mono,
+                'audio_scale': args.noise_audio_scale,
+            }
         elif name == 'pixel_scramble':
             params = {
                 'count_pct': args.pscramble_count_pct,
@@ -570,6 +577,19 @@ def main():
                         help='which axis to warp along (default horizontal)')
     wp_grp.add_argument('--warp-audio-scale', type=float, default=0.5,
                         help='audio-reactivity strength for the amplitude (default 0.5)')
+
+    ns_grp = p.add_argument_group('noise options')
+    ns_grp.add_argument('--noise-amount', type=float, default=15.0,
+                        help='max noise amplitude in 0-255 units (default 15 = subtle grain)')
+    ns_grp.add_argument('--noise-type', choices=['gaussian', 'uniform'], default='gaussian',
+                        help='distribution: gaussian (soft/grain) or uniform (harsh/punchy)')
+    ns_grp.add_argument('--noise-mono', action='store_true', default=True,
+                        help='same noise on R/G/B (luminance grain, default). '
+                             'Pass --no-noise-mono for colored/TV-static noise.')
+    ns_grp.add_argument('--no-noise-mono', dest='noise_mono', action='store_false',
+                        help='independent per-channel noise (colored TV static)')
+    ns_grp.add_argument('--noise-audio-scale', type=float, default=0.4,
+                        help='audio-reactivity strength (default 0.4)')
 
     args = p.parse_args()
 

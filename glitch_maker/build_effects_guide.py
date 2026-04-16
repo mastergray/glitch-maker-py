@@ -27,6 +27,9 @@ DEFAULT_AUDIO = (
 )
 
 EFFECT_DESCRIPTIONS = {
+    'noise':           'Per-pixel random perturbation across the whole frame. Gaussian '
+                       '(soft film grain) or uniform (harsher static); monochrome '
+                       '(luminance-only) or per-channel (colored TV static).',
     'tear':            'Edge-anchored signal-tear bands; shape can be band, square, or circle. '
                        'Source fills the torn region with shifted base pixels, a secondary clip, '
                        'or a solid color.',
@@ -54,6 +57,7 @@ EFFECT_DESCRIPTIONS = {
     'warp':            'Sine-wave displacement across rows/cols/both. Underwater, heat-haze, '
                        'or analog-tape wobble.',
 }
+# insert noise ordering is lexicographic via PARAMETRIC sort — guide auto-picks
 
 
 # Demo-tuned flag overrides per effect so the guide reads clearly on 5s of
@@ -115,6 +119,10 @@ DEMO_FLAGS = {
         '--warp-frequency', '0.025',
         '--warp-direction', 'both',
     ],
+    'noise': [
+        '--noise-amount', '30',
+        '--noise-type', 'gaussian',
+    ],
 }
 
 
@@ -130,7 +138,7 @@ RECIPE_DESCRIPTIONS = {
     'destroy':      'Maximum stack: wide tear + chunky scramble + chromatic, long '
                     'accumulation window for near-total destruction before reset.',
     'vhs':          'Analog tape look — heavy horizontal chromatic bleed, full-width '
-                    'scanline bands, small-chunk databend grain over everything, and a '
+                    'scanline bands, monochrome gaussian noise for film grain, and a '
                     'subtle horizontal weave via warp. No discrete block patches.',
     'underwater':   'Warp-driven organic wobble, both axes, with a hint of circular '
                     'chromatic. No accumulation; the frame stays readable.',

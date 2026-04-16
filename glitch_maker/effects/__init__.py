@@ -15,6 +15,7 @@ from .bit_crush import BitCrush
 from .invert_blocks import InvertBlocks
 from .slitscan import Slitscan
 from .warp import Warp
+from .noise import Noise
 
 
 REGISTRY = {}
@@ -32,4 +33,5 @@ PARAMETRIC = {
     'invert_blocks': InvertBlocks,
     'slitscan': Slitscan,
     'warp': Warp,
+    'noise': Noise,
 }

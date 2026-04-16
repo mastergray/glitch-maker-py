@@ -29,12 +29,12 @@
       }
     },
     {
-      "name": "databend",
+      "name": "noise",
       "params": {
-        "count": 150,
-        "chunk_size": 64,
-        "modes": "xor",
-        "audio_scale": 0.6
+        "amount": 18,
+        "type": "gaussian",
+        "mono": true,
+        "audio_scale": 0.3
       }
     }
   ],
