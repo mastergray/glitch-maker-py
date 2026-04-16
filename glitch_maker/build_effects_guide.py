@@ -56,6 +56,68 @@ EFFECT_DESCRIPTIONS = {
 }
 
 
+# Demo-tuned flag overrides per effect so the guide reads clearly on 5s of
+# real footage. Defaults tuned for general use are often too subtle for a
+# 5-second loop without accumulation; these push each effect toward the
+# "obviously this is the effect" end of its range.
+DEMO_FLAGS = {
+    'tear': [
+        '--tear-count-pct', '10',
+        '--tear-thickness-pct', '30',
+        '--tear-length-pct', '90',
+        '--tear-displace-max-pct', '35',
+        '--accumulate', '--accumulate-bleed', '0.15', '--accumulate-reset-sec', '3',
+    ],
+    'pixel_sort': [
+        '--psort-direction', 'vertical',
+        '--psort-lower', '0.1',
+        '--psort-upper', '0.9',
+        '--psort-audio-scale', '0.3',
+        '--accumulate', '--accumulate-bleed', '0.2', '--accumulate-reset-sec', '3',
+    ],
+    'pixel_scramble': [
+        '--pscramble-count-pct', '8',
+        '--pscramble-size-pct', '25',
+    ],
+    'jpeg_corrupt': [
+        '--jpeg-count-pct', '10',
+        '--jpeg-size-pct', '30',
+        '--jpeg-quality', '3',
+    ],
+    'chromatic': [
+        '--chroma-amount', '40',
+        '--chroma-direction', 'circular',
+        '--chroma-audio-scale', '0.5',
+    ],
+    'databend': [
+        '--databend-count', '30',
+        '--databend-chunk-size', '4096',
+    ],
+    'channel_swap': [
+        '--cswap-count-pct', '12',
+        '--cswap-size-pct', '30',
+    ],
+    'bit_crush': [
+        '--bcrush-count-pct', '10',
+        '--bcrush-size-pct', '30',
+        '--bcrush-bits', '1',
+    ],
+    'invert_blocks': [
+        '--invert-count-pct', '10',
+        '--invert-size-pct', '30',
+    ],
+    'slitscan': [
+        '--slitscan-max-delay', '60',
+        '--slitscan-audio-scale', '0.2',
+    ],
+    'warp': [
+        '--warp-amplitude', '50',
+        '--warp-frequency', '0.025',
+        '--warp-direction', 'both',
+    ],
+}
+
+
 RECIPE_DESCRIPTIONS = {
     'subtle':       'Light chromatic fringing plus sparse, delayed tears. Barely-there '
                     'glitch accents — good starting point for music-video punches.',
@@ -160,13 +222,15 @@ CARD_TEMPLATE = """      <div class="card">
 
 
 def render_effect_clip(source: str, audio: str, effect: str, out_path: Path, seed: int):
-    subprocess.check_call([
+    cmd = [
         'python3', 'render.py', source, str(out_path),
         '--effects', effect,
         '--audio', audio,
         '--seed', str(seed),
         '--no-profile',
-    ], stdout=subprocess.DEVNULL)
+    ]
+    cmd.extend(DEMO_FLAGS.get(effect, []))
+    subprocess.check_call(cmd, stdout=subprocess.DEVNULL)
 
 
 def render_recipe_clip(source: str, audio: str, recipe_path: str, out_path: Path, seed: int):
