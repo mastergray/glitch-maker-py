@@ -47,63 +47,87 @@ def _parse_color(s: str) -> tuple[int, int, int]:
     return vals
 
 
-def build_stack(names, args):
+def build_stack_from_args(names, args):
+    """Build (name, params, instance) triples from CLI flag values."""
     stack = []
     for name in names:
         if name == 'clip_cut':
             if not args.clip_cut_with:
                 raise SystemExit('clip_cut requires --clip-cut-with PATH')
-            stack.append((name, PARAMETRIC['clip_cut'](args.clip_cut_with)))
+            params = {'other_path': args.clip_cut_with}
         elif name == 'tear':
             if args.tear_source == 'clip' and not args.tear_clip:
                 raise SystemExit('tear source=clip requires --tear-clip PATH')
-            stack.append((name, PARAMETRIC['tear'](
-                source=args.tear_source,
-                clip_path=args.tear_clip,
-                color=_parse_color(args.tear_color),
-                opacity=args.tear_opacity,
-                orientation=args.tear_orientation,
-                length_pct=args.tear_length_pct,
-                thickness_pct=args.tear_thickness_pct,
-                count_pct=args.tear_count_pct,
-                displace_max_pct=args.tear_displace_max_pct,
-                delay_frames=args.tear_delay_frames,
-                shape=args.tear_shape,
-            )))
+            params = {
+                'source': args.tear_source,
+                'clip_path': args.tear_clip,
+                'color': list(_parse_color(args.tear_color)),
+                'opacity': args.tear_opacity,
+                'orientation': args.tear_orientation,
+                'length_pct': args.tear_length_pct,
+                'thickness_pct': args.tear_thickness_pct,
+                'count_pct': args.tear_count_pct,
+                'displace_max_pct': args.tear_displace_max_pct,
+                'delay_frames': args.tear_delay_frames,
+                'shape': args.tear_shape,
+            }
         elif name == 'pixel_scramble':
-            stack.append((name, PARAMETRIC['pixel_scramble'](
-                count_pct=args.pscramble_count_pct,
-                size_pct=args.pscramble_size_pct,
-            )))
+            params = {
+                'count_pct': args.pscramble_count_pct,
+                'size_pct': args.pscramble_size_pct,
+            }
         elif name == 'jpeg_corrupt':
-            stack.append((name, PARAMETRIC['jpeg_corrupt'](
-                count_pct=args.jpeg_count_pct,
-                size_pct=args.jpeg_size_pct,
-                quality=args.jpeg_quality,
-            )))
+            params = {
+                'count_pct': args.jpeg_count_pct,
+                'size_pct': args.jpeg_size_pct,
+                'quality': args.jpeg_quality,
+            }
         elif name == 'pixel_sort':
-            stack.append((name, PARAMETRIC['pixel_sort'](
-                sort_by=args.psort_sort_by,
-                direction=args.psort_direction,
-                lower_threshold=args.psort_lower,
-                upper_threshold=args.psort_upper,
-                reverse=args.psort_reverse,
-                angle=args.psort_angle,
-                audio_scale=args.psort_audio_scale,
-            )))
+            params = {
+                'sort_by': args.psort_sort_by,
+                'direction': args.psort_direction,
+                'lower_threshold': args.psort_lower,
+                'upper_threshold': args.psort_upper,
+                'reverse': args.psort_reverse,
+                'angle': args.psort_angle,
+                'audio_scale': args.psort_audio_scale,
+            }
         elif name in REGISTRY:
-            stack.append((name, REGISTRY[name]()))
+            params = {}
         else:
             raise SystemExit(f'unknown effect: {name}')
+        stack.append(_instantiate(name, params))
     return stack
 
 
-def render(source_path: str, out_path: str, effects: list[str],
-           stack_args, audio_path: str | None = None,
+def _instantiate(name: str, params: dict) -> tuple:
+    """Return (name, params, instance) for a single effect spec."""
+    if name in PARAMETRIC:
+        return (name, dict(params), PARAMETRIC[name](**params))
+    if name in REGISTRY:
+        if params:
+            raise SystemExit(f'effect {name!r} is zero-arg; got params: {params}')
+        return (name, {}, REGISTRY[name]())
+    raise SystemExit(f'unknown effect: {name}')
+
+
+def build_stack_from_config(effects_spec: list) -> list:
+    """Build stack from a JSON-config-style list of {name, params} dicts."""
+    stack = []
+    for i, spec in enumerate(effects_spec):
+        if not isinstance(spec, dict) or 'name' not in spec:
+            raise SystemExit(f'config effects[{i}] must be a dict with "name"; got {spec!r}')
+        stack.append(_instantiate(spec['name'], spec.get('params', {})))
+    return stack
+
+
+def render(source_path: str, out_path: str, stack: list,
+           audio_path: str | None = None,
            seed: int | None = None, crf: int = 18,
            profile_path: str | None = None,
            accumulate: bool = False, accumulate_reset_sec: float = 2.0,
            accumulate_bleed: float = 0.0):
+    """Render with a pre-built stack of (name, params, instance) triples."""
     if seed is None:
         seed = int.from_bytes(os.urandom(4), 'big')
     np.random.seed(seed)
@@ -119,8 +143,7 @@ def render(source_path: str, out_path: str, effects: list[str],
     section_frames = set(af.section_change_frames)
     print(f'  duration={af.duration_sec:.2f}s sections={len(section_frames)} beats={int(af.beat.sum())}')
 
-    stack = build_stack(effects, stack_args)
-    print(f'[stack] {[n for n, _ in stack]}')
+    print(f'[stack] {[n for n, _, _ in stack]}')
 
     reader, frame_nbytes = open_reader(source_path, meta)
     writer = open_writer(source_path, out_path, meta, crf=crf)
@@ -164,7 +187,7 @@ def render(source_path: str, out_path: str, effects: list[str],
             else:
                 frame = source_frame
 
-            for _, eff in stack:
+            for _, _, eff in stack:
                 frame = eff.step(frame, feats)
                 if frame.dtype != np.uint8:
                     frame = frame.astype(np.uint8)
@@ -185,7 +208,7 @@ def render(source_path: str, out_path: str, effects: list[str],
         reader.wait()
         writer.stdin.close()
         writer.wait()
-        for name, eff in stack:
+        for _, _, eff in stack:
             if hasattr(eff, 'close'):
                 eff.close()
         # Clean up any audio tempfile we created ourselves.
@@ -199,13 +222,21 @@ def render(source_path: str, out_path: str, effects: list[str],
     render_fps = i / dt if dt else 0
     print(f'[render] done in {dt:.1f}s ({render_fps:.1f} fps, {i} frames)')
 
+    effects_spec = [{'name': n, 'params': p} for n, p, _ in stack]
     profile = {
+        'version': 1,
         'input': {'video': os.path.abspath(source_path),
                   'audio': os.path.abspath(audio_src) if audio_path else 'extracted-from-video',
                   'width': meta.width, 'height': meta.height,
                   'fps': meta.fps, 'n_frames': i},
         'output': {'path': os.path.abspath(out_path), 'crf': crf},
-        'settings': {'seed': seed, 'effects': list(effects)},
+        'settings': {'seed': seed},
+        'effects': effects_spec,
+        'accumulate': {
+            'enabled': accumulate,
+            'bleed': accumulate_bleed,
+            'reset_sec': accumulate_reset_sec,
+        },
         'audio_analysis_summary': {
             'beats': int(af.beat.sum()),
             'downbeats': int(af.downbeat.sum()),
@@ -219,7 +250,7 @@ def render(source_path: str, out_path: str, effects: list[str],
     print('=== render summary ===')
     print(f'  input:   {profile["input"]["video"]}')
     print(f'  output:  {profile["output"]["path"]}')
-    print(f'  effects: {", ".join(effects)}')
+    print(f'  effects: {", ".join(n for n, _, _ in stack)}')
     print(f'  seed:    {seed}')
     asum = profile['audio_analysis_summary']
     print(f'  audio:   beats={asum["beats"]} downbeats={asum["downbeats"]} '
@@ -244,8 +275,12 @@ def main():
     )
     p.add_argument('source', help='input video (MP4 / MKV / ...)')
     p.add_argument('output', help='output MP4')
-    p.add_argument('--effects', nargs='+', required=True,
-                   help='ordered stack of effects to apply (see list below)')
+    p.add_argument('--config', default=None,
+                   help='load effect recipe from JSON file (replaces --effects and per-effect '
+                        'flags; a previously-written profile.json can be used as a config)')
+    p.add_argument('--effects', nargs='+', default=None,
+                   help='ordered stack of effects to apply (see list below). Required unless '
+                        '--config is passed.')
     p.add_argument('--audio', default=None,
                    help='override audio source (default: extract from --source)')
     p.add_argument('--seed', type=int, default=None,
@@ -351,10 +386,39 @@ def main():
 
     args = p.parse_args()
 
-    valid = set(REGISTRY) | set(PARAMETRIC)
-    unknown = [e for e in args.effects if e not in valid]
-    if unknown:
-        p.error(f"unknown effect(s): {', '.join(unknown)}\n  valid: {', '.join(effect_names)}")
+    # --config XOR --effects (need exactly one source of effect definitions)
+    if args.config and args.effects:
+        p.error('--config and --effects are mutually exclusive')
+    if not args.config and not args.effects:
+        p.error('either --config PATH or --effects NAME [NAME ...] is required')
+
+    if args.config:
+        with open(args.config) as f:
+            cfg = json.load(f)
+        stack = build_stack_from_config(cfg.get('effects', []))
+        acc_cfg = cfg.get('accumulate', {})
+        accumulate = bool(acc_cfg.get('enabled', False))
+        accumulate_bleed = float(acc_cfg.get('bleed', 0.0))
+        accumulate_reset_sec = float(acc_cfg.get('reset_sec', 2.0))
+        # CLI --accumulate* flags override config when explicitly passed, but
+        # argparse can't easily tell "explicitly passed" from "default". We use
+        # simple rule: if the flag value differs from the parser default, it
+        # was probably explicit. Imperfect, but matches common usage.
+        if args.accumulate:  # store_true; True means user passed --accumulate
+            accumulate = True
+        if args.accumulate_bleed != 0.0:
+            accumulate_bleed = args.accumulate_bleed
+        if args.accumulate_reset_sec != 2.0:
+            accumulate_reset_sec = args.accumulate_reset_sec
+    else:
+        valid = set(REGISTRY) | set(PARAMETRIC)
+        unknown = [e for e in args.effects if e not in valid]
+        if unknown:
+            p.error(f"unknown effect(s): {', '.join(unknown)}\n  valid: {', '.join(effect_names)}")
+        stack = build_stack_from_args(args.effects, args)
+        accumulate = args.accumulate
+        accumulate_bleed = args.accumulate_bleed
+        accumulate_reset_sec = args.accumulate_reset_sec
 
     if args.no_profile:
         profile_path = None
@@ -364,12 +428,12 @@ def main():
         base, _ = os.path.splitext(args.output)
         profile_path = base + '.profile.json'
 
-    render(args.source, args.output, args.effects,
-           stack_args=args, audio_path=args.audio,
+    render(args.source, args.output, stack,
+           audio_path=args.audio,
            seed=args.seed, crf=args.crf, profile_path=profile_path,
-           accumulate=args.accumulate,
-           accumulate_reset_sec=args.accumulate_reset_sec,
-           accumulate_bleed=args.accumulate_bleed)
+           accumulate=accumulate,
+           accumulate_reset_sec=accumulate_reset_sec,
+           accumulate_bleed=accumulate_bleed)
 
 
 if __name__ == '__main__':

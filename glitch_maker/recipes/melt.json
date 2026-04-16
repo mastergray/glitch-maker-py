@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "effects": [
+    {
+      "name": "pixel_sort",
+      "params": {
+        "sort_by": "brightness",
+        "direction": "vertical",
+        "lower_threshold": 0.2,
+        "upper_threshold": 0.8,
+        "audio_scale": 0.3
+      }
+    }
+  ],
+  "accumulate": {"enabled": true, "bleed": 0.12, "reset_sec": 4}
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "effects": [
+    {"name": "chromatic", "params": {}},
+    {
+      "name": "tear",
+      "params": {
+        "shape": "band",
+        "source": "displace",
+        "orientation": "horizontal",
+        "length_pct": 40,
+        "thickness_pct": 10,
+        "count_pct": 2,
+        "displace_max_pct": 10,
+        "delay_frames": 15
+      }
+    }
+  ],
+  "accumulate": {"enabled": false}
+}

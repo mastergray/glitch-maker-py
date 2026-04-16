@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "effects": [
+    {
+      "name": "tear",
+      "params": {
+        "shape": "band",
+        "source": "displace",
+        "length_pct": 100,
+        "thickness_pct": 40,
+        "count_pct": 15,
+        "displace_max_pct": 40
+      }
+    },
+    {
+      "name": "pixel_scramble",
+      "params": {"count_pct": 12, "size_pct": 30}
+    },
+    {"name": "chromatic", "params": {}}
+  ],
+  "accumulate": {"enabled": true, "bleed": 0.05, "reset_sec": 10}
+}
