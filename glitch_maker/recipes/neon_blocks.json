@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "effects": [
+    {
+      "name": "channel_swap",
+      "params": {
+        "count_pct": 10, "size_pct": 25, "mode": "rotate",
+        "shape": "rectangle"
+      }
+    },
+    {
+      "name": "bit_crush",
+      "params": {
+        "count_pct": 8, "size_pct": 25, "bits": 1,
+        "shape": "rectangle"
+      }
+    },
+    {
+      "name": "invert_blocks",
+      "params": {
+        "count_pct": 3, "size_pct": 20,
+        "shape": "rectangle"
+      }
+    }
+  ],
+  "accumulate": {"enabled": true, "bleed": 0.2, "reset_sec": 3}
+}

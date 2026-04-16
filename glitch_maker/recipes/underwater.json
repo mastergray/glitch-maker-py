@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "effects": [
+    {
+      "name": "warp",
+      "params": {
+        "amplitude_px": 40,
+        "frequency": 0.015,
+        "speed": 2.5,
+        "direction": "both",
+        "audio_scale": 0.4
+      }
+    },
+    {
+      "name": "chromatic",
+      "params": {"amount": 15, "direction": "circular", "audio_scale": 0.3}
+    }
+  ],
+  "accumulate": {"enabled": false}
+}

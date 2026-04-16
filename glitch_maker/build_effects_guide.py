@@ -129,7 +129,38 @@ RECIPE_DESCRIPTIONS = {
                     'downward into painted streaks that rebuild after each reset.',
     'destroy':      'Maximum stack: wide tear + chunky scramble + chromatic, long '
                     'accumulation window for near-total destruction before reset.',
+    'vhs':          'Analog tape look — horizontal chromatic bleed, thin horizontal '
+                    'scanline-tears, and sparse R/B channel-swap patches for tape-wear.',
+    'underwater':   'Warp-driven organic wobble, both axes, with a hint of circular '
+                    'chromatic. No accumulation; the frame stays readable.',
+    'scan_lines':   'Many thin horizontal tear-bands with tight spacing — reads as '
+                    'CRT-style scanline glitching with horizontal chromatic tearing.',
+    'time_smear':   'Pure slitscan with strong accumulation — time-warped motion drags '
+                    'become ghost trails that persist across the full frame.',
+    'neon_blocks':  'channel_swap (rotate) + harsh bit_crush + sparse invert_blocks all '
+                    'stacked under accumulation. Neon-chaotic corruption patches.',
+    'rainbow_sort': 'pixel_sort by hue across the full threshold range — sunrise colors '
+                    'rearrange into rainbow-banded streaks with accumulation carry.',
 }
+
+
+SHAPE_SHOWCASE = [
+    ('bcrush_rectangle', 'bit_crush · rectangle',
+     'Block-based effects all support --shape rectangle (default). '
+     'Random w/h blocks scattered across the frame.',
+     ['--effects', 'bit_crush', '--bcrush-shape', 'rectangle',
+      '--bcrush-count-pct', '10', '--bcrush-size-pct', '30', '--bcrush-bits', '1']),
+    ('bcrush_square', 'bit_crush · square',
+     '--shape square forces equal width and height. '
+     'More uniform/structural than random rectangles.',
+     ['--effects', 'bit_crush', '--bcrush-shape', 'square',
+      '--bcrush-count-pct', '10', '--bcrush-size-pct', '30', '--bcrush-bits', '1']),
+    ('bcrush_circle', 'bit_crush · circle',
+     '--shape circle uses a circular mask so the effect only affects the disk '
+     'interior. Soft/organic feel vs hard rectangle edges.',
+     ['--effects', 'bit_crush', '--bcrush-shape', 'circle',
+      '--bcrush-count-pct', '10', '--bcrush-size-pct', '30', '--bcrush-bits', '1']),
+]
 
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -196,6 +227,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     </div>
   </section>
   <section>
+    <h2>Shape variants</h2>
+    <div class="grid">
+{shape_cards}
+    </div>
+  </section>
+  <section>
     <h2>Recipes</h2>
     <div class="grid">
 {recipe_cards}
@@ -243,8 +280,18 @@ def render_recipe_clip(source: str, audio: str, recipe_path: str, out_path: Path
     ], stdout=subprocess.DEVNULL)
 
 
+def render_shape_clip(source: str, audio: str, extra_flags: list, out_path: Path, seed: int):
+    subprocess.check_call([
+        'python3', 'render.py', source, str(out_path),
+        '--audio', audio,
+        '--seed', str(seed),
+        '--no-profile',
+        *extra_flags,
+    ], stdout=subprocess.DEVNULL)
+
+
 def build_index(output_dir: Path, effects: list[str], recipes: list[str],
-                length: float, source: str, audio: str):
+                shapes: list[tuple], length: float, source: str, audio: str):
     def card(name: str, clip: str, description: str) -> str:
         return CARD_TEMPLATE.format(
             name=html.escape(name),
@@ -260,11 +307,16 @@ def build_index(output_dir: Path, effects: list[str], recipes: list[str],
         card(r, f'recipe_{r}.mp4', RECIPE_DESCRIPTIONS.get(r, 'No description.'))
         for r in recipes
     )
+    shape_cards = '\n'.join(
+        card(label, f'shape_{slug}.mp4', desc)
+        for slug, label, desc, _ in shapes
+    )
     page = HTML_TEMPLATE.format(
         effect_count=len(effects),
         recipe_count=len(recipes),
         length=round(length, 1),
         effect_cards=effect_cards,
+        shape_cards=shape_cards,
         recipe_cards=recipe_cards,
         stamp=time.strftime('%Y-%m-%d'),
         source=html.escape(os.path.basename(source)),
@@ -371,6 +423,18 @@ def main() -> int:
         except subprocess.CalledProcessError as e:
             print(f'  [{i:2}/{len(recipes)}] recipe {r}: FAILED ({e})')
 
+    for i, (slug, label, _desc, flags) in enumerate(SHAPE_SHOWCASE, 1):
+        clip_path = clips_dir / f'shape_{slug}.mp4'
+        if args.skip_existing and clip_path.exists():
+            print(f'  [{i:2}/{len(SHAPE_SHOWCASE)}] shape {slug}: skip (exists)')
+            continue
+        ts = time.time()
+        try:
+            render_shape_clip(str(src), args.audio, flags, clip_path, args.seed)
+            print(f'  [{i:2}/{len(SHAPE_SHOWCASE)}] shape {slug}: {time.time() - ts:.1f}s')
+        except subprocess.CalledProcessError as e:
+            print(f'  [{i:2}/{len(SHAPE_SHOWCASE)}] shape {slug}: FAILED ({e})')
+
     # Determine clip length from first rendered mp4
     probe_target = None
     for fx in effects:
@@ -393,7 +457,7 @@ def main() -> int:
         except Exception:
             pass
 
-    build_index(output_dir, effects, recipes, length, str(src), args.audio)
+    build_index(output_dir, effects, recipes, SHAPE_SHOWCASE, length, str(src), args.audio)
     print(f'[guide] wrote {output_dir / "index.html"}')
     print(f'[guide] total {time.time() - t0:.1f}s')
     return 0

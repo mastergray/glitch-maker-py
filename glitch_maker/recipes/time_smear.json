@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "effects": [
+    {
+      "name": "slitscan",
+      "params": {
+        "direction": "horizontal",
+        "max_delay_frames": 60,
+        "audio_scale": 0.3
+      }
+    }
+  ],
+  "accumulate": {"enabled": true, "bleed": 0.3, "reset_sec": 5}
+}

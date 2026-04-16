@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "effects": [
+    {
+      "name": "tear",
+      "params": {
+        "shape": "band",
+        "source": "displace",
+        "orientation": "horizontal",
+        "length_pct": 100,
+        "thickness_pct": 1.5,
+        "count_pct": 40,
+        "displace_max_pct": 15,
+        "edge": "random"
+      }
+    },
+    {
+      "name": "chromatic",
+      "params": {"amount": 10, "direction": "horizontal", "audio_scale": 0.5}
+    }
+  ],
+  "accumulate": {"enabled": false}
+}
