@@ -159,6 +159,61 @@ RECIPE_DESCRIPTIONS = {
 }
 
 
+# Tear + bleed showcase uses a high-contrast source (centered subject on black)
+# where tear displacements create visible contrast breaks. Sunrise gradient
+# footage hides tear effects because displaced rows look like adjacent rows.
+TEAR_SHOWCASE_SOURCE = 'test/atom_5s.mp4'
+TEAR_SHOWCASE = [
+    # (slug, label, description, extra CLI flags to pass render.py)
+    ('bleed_subtle', 'tear · bleed 0.3 (fast decay)',
+     'Medium tear with HIGH bleed (0.3). Damage fades in ~3 frames, so tears flash '
+     'briefly and the source keeps flowing. Most subtle ghost feel.',
+     ['--effects', 'tear',
+      '--tear-count-pct', '8', '--tear-thickness-pct', '25', '--tear-length-pct', '80',
+      '--tear-displace-max-pct', '30',
+      '--accumulate', '--accumulate-bleed', '0.3', '--accumulate-reset-sec', '3']),
+    ('bleed_medium', 'tear · bleed 0.15 (sweet spot)',
+     'Moderate tear + medium bleed — the setting we iterated toward. Edge-anchored '
+     'tears persist as ghost trails for ~10 frames before fading. Animation still '
+     'visible underneath.',
+     ['--effects', 'tear',
+      '--tear-count-pct', '10', '--tear-thickness-pct', '30', '--tear-length-pct', '90',
+      '--tear-displace-max-pct', '35',
+      '--accumulate', '--accumulate-bleed', '0.15', '--accumulate-reset-sec', '3']),
+    ('bleed_heavy', 'tear · bleed 0.05 (persistent)',
+     'Heavy tear + very low bleed — old damage persists for ~50 frames. '
+     'Ghost trails dominate and compound until the reset snaps the frame clean.',
+     ['--effects', 'tear',
+      '--tear-count-pct', '12', '--tear-thickness-pct', '35', '--tear-length-pct', '90',
+      '--tear-displace-max-pct', '40',
+      '--accumulate', '--accumulate-bleed', '0.05', '--accumulate-reset-sec', '4']),
+    ('bursts', 'tear · rhythmic bursts',
+     'delay_frames=30 + bleed 0.15 — tear only fires every 0.5s, producing '
+     'punctuated damage waves that accumulate briefly then fade. Feels like glitch '
+     'hits landing on the beat.',
+     ['--effects', 'tear',
+      '--tear-count-pct', '15', '--tear-thickness-pct', '35', '--tear-length-pct', '100',
+      '--tear-displace-max-pct', '40', '--tear-delay-frames', '30',
+      '--accumulate', '--accumulate-bleed', '0.15', '--accumulate-reset-sec', '4']),
+    ('recipe_signal_tear', 'recipe · signal_tear',
+     'The signal_tear recipe (tear + chromatic + mild bleed) on atom. Compare to '
+     'the sunrise version in the Recipes section — much more dramatic here.',
+     ['--config', 'recipes/signal_tear.json']),
+    ('recipe_datamosh', 'recipe · datamosh',
+     'datamosh recipe (tear + scramble, pure-freeze) on atom. Each 2s window the '
+     'source freezes and progressively shreds.',
+     ['--config', 'recipes/datamosh.json']),
+    ('recipe_sync_loss', 'recipe · sync_loss',
+     'sync_loss recipe on atom. Thick displacement bands with chromatic fringing; '
+     'the atom visibly fragments along the torn rows.',
+     ['--config', 'recipes/sync_loss.json']),
+    ('recipe_oblivion', 'recipe · oblivion',
+     'oblivion recipe on atom — maximum accumulation. By the end of each reset '
+     'window the atom is reduced to fragments/noise.',
+     ['--config', 'recipes/oblivion.json']),
+]
+
+
 SHAPE_SHOWCASE = [
     ('bcrush_rectangle', 'bit_crush · rectangle',
      'Block-based effects all support --shape rectangle (default). '
@@ -253,6 +308,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 {recipe_cards}
     </div>
   </section>
+  <section>
+    <h2>Tear showcase <span style="color:var(--muted);font-size:0.9rem;font-weight:400;text-transform:none;">on high-contrast source</span></h2>
+    <p style="color:var(--muted);margin:-0.2rem 0 1rem;max-width:72ch;line-height:1.5;">
+      Tear displacements need contrast to read — shifting rows of smooth sky
+      looks the same as adjacent rows. These clips use an abstract source
+      (centered subject on black) where tear + accumulate-bleed shows the
+      signature edge-anchored ghost trails we iterated toward.
+    </p>
+    <div class="grid">
+{tear_cards}
+    </div>
+  </section>
 </main>
 <footer>
   Generated {stamp} &middot; source: {source} &middot; audio: {audio}
@@ -306,7 +373,8 @@ def render_shape_clip(source: str, audio: str, extra_flags: list, out_path: Path
 
 
 def build_index(output_dir: Path, effects: list[str], recipes: list[str],
-                shapes: list[tuple], length: float, source: str, audio: str):
+                shapes: list[tuple], tears: list[tuple],
+                length: float, source: str, audio: str):
     def card(name: str, clip: str, description: str) -> str:
         return CARD_TEMPLATE.format(
             name=html.escape(name),
@@ -326,6 +394,10 @@ def build_index(output_dir: Path, effects: list[str], recipes: list[str],
         card(label, f'shape_{slug}.mp4', desc)
         for slug, label, desc, _ in shapes
     )
+    tear_cards = '\n'.join(
+        card(label, f'tear_{slug}.mp4', desc)
+        for slug, label, desc, _ in tears
+    )
     page = HTML_TEMPLATE.format(
         effect_count=len(effects),
         recipe_count=len(recipes),
@@ -333,6 +405,7 @@ def build_index(output_dir: Path, effects: list[str], recipes: list[str],
         effect_cards=effect_cards,
         shape_cards=shape_cards,
         recipe_cards=recipe_cards,
+        tear_cards=tear_cards,
         stamp=time.strftime('%Y-%m-%d'),
         source=html.escape(os.path.basename(source)),
         audio=html.escape(os.path.basename(audio)),
@@ -450,6 +523,27 @@ def main() -> int:
         except subprocess.CalledProcessError as e:
             print(f'  [{i:2}/{len(SHAPE_SHOWCASE)}] shape {slug}: FAILED ({e})')
 
+    # Tear showcase uses a different source + its baked-in audio (atom clip).
+    tear_src_path = Path(TEAR_SHOWCASE_SOURCE).resolve()
+    if not tear_src_path.exists():
+        print(f'warning: tear showcase source not found: {tear_src_path}', file=sys.stderr)
+    else:
+        for i, (slug, label, _desc, flags) in enumerate(TEAR_SHOWCASE, 1):
+            clip_path = clips_dir / f'tear_{slug}.mp4'
+            if args.skip_existing and clip_path.exists():
+                print(f'  [{i:2}/{len(TEAR_SHOWCASE)}] tear {slug}: skip (exists)')
+                continue
+            ts = time.time()
+            try:
+                # Atom clip has baked-in audio — no --audio override needed.
+                subprocess.check_call([
+                    'python3', 'render.py', str(tear_src_path), str(clip_path),
+                    '--seed', str(args.seed), '--no-profile', *flags,
+                ], stdout=subprocess.DEVNULL)
+                print(f'  [{i:2}/{len(TEAR_SHOWCASE)}] tear {slug}: {time.time() - ts:.1f}s')
+            except subprocess.CalledProcessError as e:
+                print(f'  [{i:2}/{len(TEAR_SHOWCASE)}] tear {slug}: FAILED ({e})')
+
     # Determine clip length from first rendered mp4
     probe_target = None
     for fx in effects:
@@ -472,7 +566,8 @@ def main() -> int:
         except Exception:
             pass
 
-    build_index(output_dir, effects, recipes, SHAPE_SHOWCASE, length, str(src), args.audio)
+    build_index(output_dir, effects, recipes, SHAPE_SHOWCASE, TEAR_SHOWCASE,
+                length, str(src), args.audio)
     print(f'[guide] wrote {output_dir / "index.html"}')
     print(f'[guide] total {time.time() - t0:.1f}s')
     return 0
