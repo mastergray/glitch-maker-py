@@ -141,6 +141,12 @@ RECIPE_DESCRIPTIONS = {
                     'stacked under accumulation. Neon-chaotic corruption patches.',
     'rainbow_sort': 'pixel_sort by hue across the full threshold range — sunrise colors '
                     'rearrange into rainbow-banded streaks with accumulation carry.',
+    'sync_loss':    'Heavy signal-tear — many thick displacement bands across the full '
+                    'width with horizontal chromatic bleed. Analog TV losing sync.',
+    'breakpoint':   'Rhythmic destruction via delay_frames — tear and scramble fire in '
+                    'sync every 20 frames, accumulating damage between bursts.',
+    'oblivion':     'Maximum stack with pure-freeze accumulation and long reset. Tear + '
+                    'scramble + chromatic + databend all compounding. Total destruction.',
 }
 
 

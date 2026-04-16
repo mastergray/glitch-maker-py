@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "effects": [
+    {
+      "name": "tear",
+      "params": {
+        "shape": "band",
+        "source": "displace",
+        "orientation": "horizontal",
+        "length_pct": 100,
+        "thickness_pct": 50,
+        "count_pct": 20,
+        "displace_max_pct": 40
+      }
+    },
+    {
+      "name": "pixel_scramble",
+      "params": {"count_pct": 15, "size_pct": 35}
+    },
+    {
+      "name": "chromatic",
+      "params": {"amount": 40, "direction": "circular", "audio_scale": 0.5}
+    },
+    {
+      "name": "databend",
+      "params": {"count": 30, "chunk_size": 8192}
+    }
+  ],
+  "accumulate": {"enabled": true, "bleed": 0.0, "reset_sec": 6}
+}
