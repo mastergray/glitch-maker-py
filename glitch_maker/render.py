@@ -67,6 +67,7 @@ def build_stack(names, args):
                 thickness_pct=args.tear_thickness_pct,
                 count_pct=args.tear_count_pct,
                 displace_max_pct=args.tear_displace_max_pct,
+                delay_frames=args.tear_delay_frames,
             )))
         elif name == 'pixel_scramble':
             stack.append((name, PARAMETRIC['pixel_scramble'](
@@ -287,6 +288,10 @@ def main():
     tear_grp.add_argument('--tear-displace-max-pct', type=float, default=25.0,
                           help='[displace source] max random block offset as %% of axis; '
                                'audio scales 0..this (default 25)')
+    tear_grp.add_argument('--tear-delay-frames', type=int, default=1,
+                          help='only generate new tears every N frames (default 1 = every '
+                               'frame). Higher values produce rhythmic tear bursts rather '
+                               'than continuous damage.')
 
     ps_grp = p.add_argument_group('pixel_scramble options')
     ps_grp.add_argument('--pscramble-count-pct', type=float, default=3.0,

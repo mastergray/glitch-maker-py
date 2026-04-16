@@ -19,7 +19,8 @@ class Tear:
                  length_pct: float = 80.0,
                  thickness_pct: float = 25.0,
                  count_pct: float = 5.0,
-                 displace_max_pct: float = 25.0):
+                 displace_max_pct: float = 25.0,
+                 delay_frames: int = 1):
         if source not in ('clip', 'color', 'displace'):
             raise ValueError(f'source must be clip/color/displace, got {source!r}')
         if orientation not in ('horizontal', 'vertical'):
@@ -35,8 +36,10 @@ class Tear:
         self.thickness_pct = float(np.clip(thickness_pct, 0.0, 100.0))
         self.count_pct = float(np.clip(count_pct, 0.0, 100.0))
         self.displace_max_pct = float(np.clip(displace_max_pct, 0.0, 100.0))
+        self.delay_frames = max(1, int(delay_frames))
         self.reader: ClipReader | None = ClipReader(clip_path) if source == 'clip' else None
         self.rng = np.random.default_rng()
+        self._frame_idx = 0
 
     def _activity(self, features: dict) -> float:
         if features.get('section_change', False):
@@ -49,6 +52,14 @@ class Tear:
         return float(np.clip(base, 0.0, 1.0))
 
     def step(self, frame: np.ndarray, features: dict) -> np.ndarray:
+        # Rate-limit tear generation to every `delay_frames` frames. Between
+        # bursts the effect is a passthrough, which under accumulate mode
+        # leaves previous tears to decay/reset normally while no new damage
+        # is added until the next burst.
+        self._frame_idx += 1
+        if self._frame_idx % self.delay_frames != 0:
+            return frame
+
         H, W, _ = frame.shape
         activity = self._activity(features)
         if activity == 0.0:
