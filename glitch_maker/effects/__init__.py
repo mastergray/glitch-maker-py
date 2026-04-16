@@ -13,7 +13,6 @@ from .jpeg_corrupt import JpegCorrupt
 
 
 REGISTRY = {
-    'pixel_sort': PixelSort,
     'databend': Databend,
     'chromatic': Chromatic,
 }
@@ -23,4 +22,5 @@ PARAMETRIC = {
     'tear': Tear,
     'pixel_scramble': PixelScramble,
     'jpeg_corrupt': JpegCorrupt,
+    'pixel_sort': PixelSort,
 }

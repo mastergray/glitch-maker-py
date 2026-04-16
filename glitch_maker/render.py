@@ -81,6 +81,16 @@ def build_stack(names, args):
                 size_pct=args.jpeg_size_pct,
                 quality=args.jpeg_quality,
             )))
+        elif name == 'pixel_sort':
+            stack.append((name, PARAMETRIC['pixel_sort'](
+                sort_by=args.psort_sort_by,
+                direction=args.psort_direction,
+                lower_threshold=args.psort_lower,
+                upper_threshold=args.psort_upper,
+                reverse=args.psort_reverse,
+                angle=args.psort_angle,
+                audio_scale=args.psort_audio_scale,
+            )))
         elif name in REGISTRY:
             stack.append((name, REGISTRY[name]()))
         else:
@@ -319,6 +329,25 @@ def main():
     jp_grp.add_argument('--jpeg-quality', type=int, default=5,
                         help='JPEG quality level inside corrupted blocks (1=extreme artifacts, '
                              '100=clean). default 5')
+
+    so_grp = p.add_argument_group('pixel_sort options')
+    so_grp.add_argument('--psort-sort-by', choices=['brightness', 'hue', 'saturation'],
+                        default='brightness',
+                        help='property to sort pixels by (default brightness)')
+    so_grp.add_argument('--psort-direction', choices=['horizontal', 'vertical', 'both'],
+                        default='horizontal',
+                        help='sort direction (default horizontal)')
+    so_grp.add_argument('--psort-lower', type=float, default=0.25,
+                        help='lower threshold; pixels below are not sorted (default 0.25)')
+    so_grp.add_argument('--psort-upper', type=float, default=0.8,
+                        help='upper threshold; pixels above are not sorted (default 0.8)')
+    so_grp.add_argument('--psort-reverse', action='store_true',
+                        help='sort descending instead of ascending')
+    so_grp.add_argument('--psort-angle', type=int, default=0,
+                        help='rotation in degrees before sort (e.g., 45 for diagonal streaks)')
+    so_grp.add_argument('--psort-audio-scale', type=float, default=0.5,
+                        help='how much audio activity widens the threshold window (0=no '
+                             'reactivity, 1=full). default 0.5')
 
     args = p.parse_args()
 
