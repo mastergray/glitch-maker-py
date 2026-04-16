@@ -4,22 +4,22 @@
     {
       "name": "channel_swap",
       "params": {
-        "count_pct": 10, "size_pct": 25, "mode": "rotate",
-        "shape": "rectangle"
+        "count_pct": 8, "size_pct": 30, "mode": "rotate",
+        "shape": "band", "orientation": "horizontal"
       }
     },
     {
       "name": "bit_crush",
       "params": {
-        "count_pct": 8, "size_pct": 25, "bits": 1,
-        "shape": "rectangle"
+        "count_pct": 6, "size_pct": 30, "bits": 1,
+        "shape": "band", "orientation": "horizontal"
       }
     },
     {
       "name": "invert_blocks",
       "params": {
-        "count_pct": 3, "size_pct": 20,
-        "shape": "rectangle"
+        "count_pct": 2, "size_pct": 20,
+        "shape": "band", "orientation": "horizontal"
       }
     }
   ],

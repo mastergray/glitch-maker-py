@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "effects": [
+    {
+      "name": "tear",
+      "params": {
+        "shape": "band",
+        "source": "displace",
+        "orientation": "horizontal",
+        "length_pct": 100,
+        "thickness_pct": 20,
+        "count_pct": 10,
+        "displace_max_pct": 30
+      }
+    },
+    {
+      "name": "bit_crush",
+      "params": {
+        "count_pct": 8,
+        "size_pct": 20,
+        "bits": 1,
+        "shape": "band",
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "name": "chromatic",
+      "params": {"amount": 25, "direction": "horizontal", "audio_scale": 0.4}
+    }
+  ],
+  "accumulate": {"enabled": true, "bleed": 0.15, "reset_sec": 3}
+}

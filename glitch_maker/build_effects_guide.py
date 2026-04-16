@@ -146,8 +146,11 @@ RECIPE_DESCRIPTIONS = {
                     'CRT-style scanline glitching with horizontal chromatic tearing.',
     'time_smear':   'Pure slitscan with strong accumulation — time-warped motion drags '
                     'become ghost trails that persist across the full frame.',
-    'neon_blocks':  'channel_swap (rotate) + harsh bit_crush + sparse invert_blocks all '
-                    'stacked under accumulation. Neon-chaotic corruption patches.',
+    'neon_blocks':  'channel_swap (rotate) + harsh bit_crush + sparse invert_blocks, all '
+                    'as horizontal bands now for full-width scanline corruption.',
+    'signal_crush': 'tear bands + bit_crush bands + chromatic — horizontal strips get '
+                    'both displaced AND harshly quantized. Signal tear where the tear '
+                    'itself is data-crushed.',
     'rainbow_sort': 'pixel_sort by hue across the full threshold range — sunrise colors '
                     'rearrange into rainbow-banded streaks with accumulation carry.',
     'sync_loss':    'Heavy signal-tear — many thick displacement bands across the full '

@@ -107,6 +107,7 @@ def build_stack_from_args(names, args):
                 'mode': args.cswap_mode,
                 'audio_scale': args.cswap_audio_scale,
                 'shape': args.cswap_shape,
+                'orientation': args.cswap_orientation,
                 'delay_frames': args.cswap_delay_frames,
             }
         elif name == 'bit_crush':
@@ -116,6 +117,7 @@ def build_stack_from_args(names, args):
                 'bits': args.bcrush_bits,
                 'audio_scale': args.bcrush_audio_scale,
                 'shape': args.bcrush_shape,
+                'orientation': args.bcrush_orientation,
                 'delay_frames': args.bcrush_delay_frames,
             }
         elif name == 'invert_blocks':
@@ -124,6 +126,7 @@ def build_stack_from_args(names, args):
                 'size_pct': args.invert_size_pct,
                 'audio_scale': args.invert_audio_scale,
                 'shape': args.invert_shape,
+                'orientation': args.invert_orientation,
                 'delay_frames': args.invert_delay_frames,
             }
         elif name == 'slitscan':
@@ -152,6 +155,7 @@ def build_stack_from_args(names, args):
                 'count_pct': args.pscramble_count_pct,
                 'size_pct': args.pscramble_size_pct,
                 'shape': args.pscramble_shape,
+                'orientation': args.pscramble_orientation,
                 'delay_frames': args.pscramble_delay_frames,
             }
         elif name == 'jpeg_corrupt':
@@ -160,6 +164,7 @@ def build_stack_from_args(names, args):
                 'size_pct': args.jpeg_size_pct,
                 'quality': args.jpeg_quality,
                 'shape': args.jpeg_shape,
+                'orientation': args.jpeg_orientation,
                 'delay_frames': args.jpeg_delay_frames,
             }
         elif name == 'pixel_sort':
@@ -443,9 +448,13 @@ def main():
     ps_grp.add_argument('--pscramble-size-pct', type=float, default=15.0,
                         help='max block size as %% of min(W,H); audio scales 0..this '
                              '(default 15)')
-    ps_grp.add_argument('--pscramble-shape', choices=['rectangle', 'square', 'circle'],
+    ps_grp.add_argument('--pscramble-shape',
+                        choices=['rectangle', 'square', 'circle', 'band'],
                         default='rectangle',
-                        help='block shape (default rectangle)')
+                        help='block shape (default rectangle; band = full-width/height strips)')
+    ps_grp.add_argument('--pscramble-orientation', choices=['horizontal', 'vertical'],
+                        default='horizontal',
+                        help='[band shape] strip orientation (default horizontal)')
     ps_grp.add_argument('--pscramble-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 
@@ -459,9 +468,13 @@ def main():
     jp_grp.add_argument('--jpeg-quality', type=int, default=5,
                         help='JPEG quality level inside corrupted blocks (1=extreme artifacts, '
                              '100=clean). default 5')
-    jp_grp.add_argument('--jpeg-shape', choices=['rectangle', 'square', 'circle'],
+    jp_grp.add_argument('--jpeg-shape',
+                        choices=['rectangle', 'square', 'circle', 'band'],
                         default='rectangle',
-                        help='block shape (default rectangle)')
+                        help='block shape (default rectangle; band = full-width/height strips)')
+    jp_grp.add_argument('--jpeg-orientation', choices=['horizontal', 'vertical'],
+                        default='horizontal',
+                        help='[band shape] strip orientation (default horizontal)')
     jp_grp.add_argument('--jpeg-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 
@@ -519,9 +532,13 @@ def main():
                              'rb (swap R/B), rg, gb, or rotate (R->G->B->R)')
     cs_grp.add_argument('--cswap-audio-scale', type=float, default=0.7,
                         help='audio-reactivity strength (default 0.7)')
-    cs_grp.add_argument('--cswap-shape', choices=['rectangle', 'square', 'circle'],
+    cs_grp.add_argument('--cswap-shape',
+                        choices=['rectangle', 'square', 'circle', 'band'],
                         default='rectangle',
-                        help='block shape (default rectangle)')
+                        help='block shape (default rectangle; band = full-width/height strips)')
+    cs_grp.add_argument('--cswap-orientation', choices=['horizontal', 'vertical'],
+                        default='horizontal',
+                        help='[band shape] strip orientation (default horizontal)')
     cs_grp.add_argument('--cswap-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 
@@ -535,9 +552,13 @@ def main():
                              'default 2 = 64 colors total')
     bc_grp.add_argument('--bcrush-audio-scale', type=float, default=0.6,
                         help='audio-reactivity strength (default 0.6)')
-    bc_grp.add_argument('--bcrush-shape', choices=['rectangle', 'square', 'circle'],
+    bc_grp.add_argument('--bcrush-shape',
+                        choices=['rectangle', 'square', 'circle', 'band'],
                         default='rectangle',
-                        help='block shape (default rectangle)')
+                        help='block shape (default rectangle; band = full-width/height strips)')
+    bc_grp.add_argument('--bcrush-orientation', choices=['horizontal', 'vertical'],
+                        default='horizontal',
+                        help='[band shape] strip orientation (default horizontal)')
     bc_grp.add_argument('--bcrush-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 
@@ -548,9 +569,13 @@ def main():
                         help='max block size as %% of min(W,H) (default 20)')
     iv_grp.add_argument('--invert-audio-scale', type=float, default=0.6,
                         help='audio-reactivity strength (default 0.6)')
-    iv_grp.add_argument('--invert-shape', choices=['rectangle', 'square', 'circle'],
+    iv_grp.add_argument('--invert-shape',
+                        choices=['rectangle', 'square', 'circle', 'band'],
                         default='rectangle',
-                        help='block shape (default rectangle)')
+                        help='block shape (default rectangle; band = full-width/height strips)')
+    iv_grp.add_argument('--invert-orientation', choices=['horizontal', 'vertical'],
+                        default='horizontal',
+                        help='[band shape] strip orientation (default horizontal)')
     iv_grp.add_argument('--invert-delay-frames', type=int, default=1,
                         help='only fire every N frames for rhythmic bursts (default 1)')
 

@@ -14,11 +14,13 @@ class JpegCorrupt:
                  size_pct: float = 20.0,
                  quality: int = 5,
                  shape: str = 'rectangle',
+                 orientation: str = 'horizontal',
                  delay_frames: int = 1):
         self.count_pct = float(np.clip(count_pct, 0.0, 100.0))
         self.size_pct = float(np.clip(size_pct, 0.0, 100.0))
         self.quality = int(np.clip(quality, 1, 100))
         self.shape = shape
+        self.orientation = orientation
         self.delay_frames = max(1, int(delay_frames))
         self.rng = np.random.default_rng()
         self._frame_idx = 0
@@ -53,7 +55,8 @@ class JpegCorrupt:
         max_size = int(min(H, W) * self.size_pct / 100.0 * activity)
         # JPEG requires min 16px for sensible DCT; raise floor compared to other effects.
         max_size = max(16, max_size)
-        blocks = pick_block_masks(self.shape, count, H, W, max_size, self.rng)
+        blocks = pick_block_masks(self.shape, count, H, W, max_size, self.rng,
+                                  orientation=self.orientation)
         if not blocks:
             return frame
 

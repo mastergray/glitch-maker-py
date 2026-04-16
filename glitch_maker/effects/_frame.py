@@ -18,7 +18,7 @@ def luminance(frame: np.ndarray) -> np.ndarray:
 
 
 def pick_block_masks(shape: str, count: int, H: int, W: int, max_size: int,
-                     rng: np.random.Generator) -> list:
+                     rng: np.random.Generator, orientation: str = 'horizontal') -> list:
     """Pick N random block positions with optional per-block masks.
 
     Returns list of (bbox, mask) pairs where bbox = (y0, y1, x0, x1) and mask
@@ -29,9 +29,13 @@ def pick_block_masks(shape: str, count: int, H: int, W: int, max_size: int,
       rectangle  random w x h rectangles (mask=None)
       square     random side, equal w = h (mask=None)
       circle     random radius disks (mask is a circular bool array)
+      band       full-width horizontal (or full-height vertical) strips;
+                 orientation selects axis. Useful for scanline-style damage.
     """
-    if shape not in ('rectangle', 'square', 'circle'):
-        raise ValueError(f'shape must be rectangle/square/circle, got {shape!r}')
+    if shape not in ('rectangle', 'square', 'circle', 'band'):
+        raise ValueError(f'shape must be rectangle/square/circle/band, got {shape!r}')
+    if orientation not in ('horizontal', 'vertical'):
+        raise ValueError(f'orientation must be horizontal/vertical, got {orientation!r}')
     if max_size < 4 or count <= 0:
         return []
 
@@ -48,6 +52,14 @@ def pick_block_masks(shape: str, count: int, H: int, W: int, max_size: int,
             y = int(rng.integers(0, max(1, H - s)))
             x = int(rng.integers(0, max(1, W - s)))
             blocks.append(((y, y + s, x, x + s), None))
+        elif shape == 'band':
+            thickness = int(rng.integers(4, max_size + 1))
+            if orientation == 'horizontal':
+                y = int(rng.integers(0, max(1, H - thickness)))
+                blocks.append(((y, y + thickness, 0, W), None))
+            else:
+                x = int(rng.integers(0, max(1, W - thickness)))
+                blocks.append(((0, H, x, x + thickness), None))
         else:  # circle
             r = int(rng.integers(2, max(3, max_size // 2 + 1)))
             cy = int(rng.integers(r, max(r + 1, H - r)))
