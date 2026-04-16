@@ -12,10 +12,7 @@ from .pixel_scramble import PixelScramble
 from .jpeg_corrupt import JpegCorrupt
 
 
-REGISTRY = {
-    'databend': Databend,
-    'chromatic': Chromatic,
-}
+REGISTRY = {}
 
 PARAMETRIC = {
     'clip_cut': ClipCut,
@@ -23,4 +20,6 @@ PARAMETRIC = {
     'pixel_scramble': PixelScramble,
     'jpeg_corrupt': JpegCorrupt,
     'pixel_sort': PixelSort,
+    'chromatic': Chromatic,
+    'databend': Databend,
 }

@@ -70,6 +70,21 @@ def build_stack_from_args(names, args):
                 'displace_max_pct': args.tear_displace_max_pct,
                 'delay_frames': args.tear_delay_frames,
                 'shape': args.tear_shape,
+                'edge': args.tear_edge,
+                'displace_dir': args.tear_displace_dir,
+            }
+        elif name == 'chromatic':
+            params = {
+                'amount': args.chroma_amount,
+                'direction': args.chroma_direction,
+                'audio_scale': args.chroma_audio_scale,
+            }
+        elif name == 'databend':
+            params = {
+                'count': args.databend_count,
+                'chunk_size': args.databend_chunk_size,
+                'modes': args.databend_modes,
+                'audio_scale': args.databend_audio_scale,
             }
         elif name == 'pixel_scramble':
             params = {
@@ -345,6 +360,16 @@ def main():
                                'circle (disks at random positions). For square/circle, '
                                'length_pct controls max side/diameter and orientation/'
                                'thickness_pct are ignored.')
+    tear_grp.add_argument('--tear-edge', choices=['random', 'start', 'end'],
+                          default='random',
+                          help='[band shape] which edge tears originate from: random '
+                               '(default, mixed), start (all from left/top), end (all from '
+                               'right/bottom). Ignored for square/circle.')
+    tear_grp.add_argument('--tear-displace-dir', choices=['any', 'positive', 'negative'],
+                          default='any',
+                          help='[displace source] lock displacement direction: any (default, '
+                               'bidirectional), positive (shift only right/down), negative '
+                               '(shift only left/up).')
 
     ps_grp = p.add_argument_group('pixel_scramble options')
     ps_grp.add_argument('--pscramble-count-pct', type=float, default=3.0,
@@ -383,6 +408,30 @@ def main():
     so_grp.add_argument('--psort-audio-scale', type=float, default=0.5,
                         help='how much audio activity widens the threshold window (0=no '
                              'reactivity, 1=full). default 0.5')
+
+    ch_grp = p.add_argument_group('chromatic options')
+    ch_grp.add_argument('--chroma-amount', type=float, default=16.0,
+                        help='max channel offset in pixels at full audio (default 16)')
+    ch_grp.add_argument('--chroma-direction', choices=['horizontal', 'vertical', 'circular'],
+                        default='circular',
+                        help='offset direction (default circular orbit)')
+    ch_grp.add_argument('--chroma-audio-scale', type=float, default=0.75,
+                        help='how much audio drives the amount (0=constant, 1=fully audio). '
+                             'default 0.75')
+
+    db_grp = p.add_argument_group('databend options')
+    db_grp.add_argument('--databend-count', type=int, default=10,
+                        help='max number of byte-chunks to corrupt per frame at full audio '
+                             '(default 10)')
+    db_grp.add_argument('--databend-chunk-size', type=int, default=1024,
+                        help='max bytes per chunk at full audio (default 1024); transients '
+                             'double this briefly')
+    db_grp.add_argument('--databend-modes', default='shift,xor,swap',
+                        help='comma-separated corruption modes from: shift, xor, swap '
+                             '(default all three)')
+    db_grp.add_argument('--databend-audio-scale', type=float, default=0.8,
+                        help='how much audio scales count/size from minimum to full '
+                             '(default 0.8)')
 
     args = p.parse_args()
 

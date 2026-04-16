@@ -26,13 +26,19 @@ class Tear:
                  count_pct: float = 5.0,
                  displace_max_pct: float = 25.0,
                  delay_frames: int = 1,
-                 shape: str = 'band'):
+                 shape: str = 'band',
+                 edge: str = 'random',
+                 displace_dir: str = 'any'):
         if source not in ('clip', 'color', 'displace'):
             raise ValueError(f'source must be clip/color/displace, got {source!r}')
         if orientation not in ('horizontal', 'vertical'):
             raise ValueError(f'orientation must be horizontal or vertical, got {orientation!r}')
         if shape not in ('band', 'square', 'circle'):
             raise ValueError(f'shape must be band/square/circle, got {shape!r}')
+        if edge not in ('random', 'start', 'end'):
+            raise ValueError(f'edge must be random/start/end, got {edge!r}')
+        if displace_dir not in ('any', 'positive', 'negative'):
+            raise ValueError(f'displace_dir must be any/positive/negative, got {displace_dir!r}')
         if source == 'clip' and clip_path is None:
             raise ValueError('tear source=clip requires clip_path')
 
@@ -46,6 +52,8 @@ class Tear:
         self.displace_max_pct = float(np.clip(displace_max_pct, 0.0, 100.0))
         self.delay_frames = max(1, int(delay_frames))
         self.shape = shape
+        self.edge = edge
+        self.displace_dir = displace_dir
         self.reader: ClipReader | None = ClipReader(clip_path) if source == 'clip' else None
         self.rng = np.random.default_rng()
         self._frame_idx = 0
@@ -117,20 +125,24 @@ class Tear:
         thick_starts = self.rng.integers(0, thickness_axis, size=count)
         thicknesses = self.rng.integers(1, max_thickness + 1, size=count)
         lengths = np.maximum(1, (self.rng.uniform(0.5, 1.0, size=count) * max_length).astype(int))
-        edges = self.rng.integers(0, 2, size=count)
+        # Pin origination edge if configured; otherwise pick per-tear at random.
+        if self.edge == 'start':
+            edges = np.zeros(count, dtype=int)
+        elif self.edge == 'end':
+            edges = np.ones(count, dtype=int)
+        else:
+            edges = self.rng.integers(0, 2, size=count)
         len_starts = np.where(edges == 0, 0, np.maximum(0, length_axis - lengths))
 
         # Band mode displaces only along the length axis (signal-tear look).
         if self.source == 'displace':
             if self.orientation == 'horizontal':
                 max_off = int(W * self.displace_max_pct / 100.0 * activity)
-                dx_arr = (self.rng.integers(-max_off, max_off + 1, size=count)
-                          if max_off > 0 else np.zeros(count, dtype=int))
+                dx_arr = self._signed_offsets(max_off, count)
                 dy_arr = np.zeros(count, dtype=int)
             else:
                 max_off = int(H * self.displace_max_pct / 100.0 * activity)
-                dy_arr = (self.rng.integers(-max_off, max_off + 1, size=count)
-                          if max_off > 0 else np.zeros(count, dtype=int))
+                dy_arr = self._signed_offsets(max_off, count)
                 dx_arr = np.zeros(count, dtype=int)
         else:
             dy_arr = dx_arr = np.zeros(count, dtype=int)
@@ -147,6 +159,16 @@ class Tear:
 
         return out
 
+    def _signed_offsets(self, max_off: int, count: int) -> np.ndarray:
+        """Return a size-`count` array of displacement offsets, respecting displace_dir."""
+        if max_off <= 0:
+            return np.zeros(count, dtype=int)
+        if self.displace_dir == 'positive':
+            return self.rng.integers(1, max_off + 1, size=count)
+        if self.displace_dir == 'negative':
+            return -self.rng.integers(1, max_off + 1, size=count)
+        return self.rng.integers(-max_off, max_off + 1, size=count)
+
     def _free_block_params(self, H, W, count, activity, max_size_factor=1.0):
         """Shared helper for square/circle: pick N random positions/sizes + 2D offsets."""
         min_axis = min(H, W)
@@ -158,10 +180,8 @@ class Tear:
         if self.source == 'displace':
             max_off_y = int(H * self.displace_max_pct / 100.0 * activity)
             max_off_x = int(W * self.displace_max_pct / 100.0 * activity)
-            dy_arr = (self.rng.integers(-max_off_y, max_off_y + 1, size=count)
-                      if max_off_y > 0 else np.zeros(count, dtype=int))
-            dx_arr = (self.rng.integers(-max_off_x, max_off_x + 1, size=count)
-                      if max_off_x > 0 else np.zeros(count, dtype=int))
+            dy_arr = self._signed_offsets(max_off_y, count)
+            dx_arr = self._signed_offsets(max_off_x, count)
         else:
             dy_arr = dx_arr = np.zeros(count, dtype=int)
         return sizes, dy_arr, dx_arr
