@@ -3,11 +3,17 @@
   "effects": [
     {
       "name": "chromatic",
-      "params": {"amount": 30, "direction": "horizontal", "audio_scale": 0.4}
+      "params": {"amount": 50, "direction": "horizontal", "audio_scale": 0.3}
     },
     {
-      "name": "channel_swap",
-      "params": {"count_pct": 3, "size_pct": 20, "mode": "rb", "shape": "rectangle"}
+      "name": "warp",
+      "params": {
+        "amplitude_px": 12,
+        "frequency": 0.004,
+        "speed": 1.2,
+        "direction": "horizontal",
+        "audio_scale": 0.3
+      }
     },
     {
       "name": "tear",
@@ -15,12 +21,22 @@
         "shape": "band",
         "source": "displace",
         "orientation": "horizontal",
-        "length_pct": 40,
-        "thickness_pct": 2,
-        "count_pct": 15,
-        "displace_max_pct": 15
+        "length_pct": 100,
+        "thickness_pct": 5,
+        "count_pct": 25,
+        "displace_max_pct": 20,
+        "edge": "random"
+      }
+    },
+    {
+      "name": "databend",
+      "params": {
+        "count": 150,
+        "chunk_size": 64,
+        "modes": "xor",
+        "audio_scale": 0.6
       }
     }
   ],
-  "accumulate": {"enabled": true, "bleed": 0.25, "reset_sec": 4}
+  "accumulate": {"enabled": false}
 }

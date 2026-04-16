@@ -129,8 +129,9 @@ RECIPE_DESCRIPTIONS = {
                     'downward into painted streaks that rebuild after each reset.',
     'destroy':      'Maximum stack: wide tear + chunky scramble + chromatic, long '
                     'accumulation window for near-total destruction before reset.',
-    'vhs':          'Analog tape look — horizontal chromatic bleed, thin horizontal '
-                    'scanline-tears, and sparse R/B channel-swap patches for tape-wear.',
+    'vhs':          'Analog tape look — heavy horizontal chromatic bleed, full-width '
+                    'scanline bands, small-chunk databend grain over everything, and a '
+                    'subtle horizontal weave via warp. No discrete block patches.',
     'underwater':   'Warp-driven organic wobble, both axes, with a hint of circular '
                     'chromatic. No accumulation; the frame stays readable.',
     'scan_lines':   'Many thin horizontal tear-bands with tight spacing — reads as '
