@@ -13,3 +13,4 @@ glitch_maker/test/*.wav
 # OS noise
 .DS_Store
 Thumbs.db
+effects-guide/
