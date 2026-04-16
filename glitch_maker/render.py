@@ -68,6 +68,7 @@ def build_stack(names, args):
                 count_pct=args.tear_count_pct,
                 displace_max_pct=args.tear_displace_max_pct,
                 delay_frames=args.tear_delay_frames,
+                shape=args.tear_shape,
             )))
         elif name == 'pixel_scramble':
             stack.append((name, PARAMETRIC['pixel_scramble'](
@@ -292,6 +293,13 @@ def main():
                           help='only generate new tears every N frames (default 1 = every '
                                'frame). Higher values produce rhythmic tear bursts rather '
                                'than continuous damage.')
+    tear_grp.add_argument('--tear-shape', choices=['band', 'square', 'circle'],
+                          default='band',
+                          help='tear region shape: band (default, edge-anchored strips), '
+                               'square (axis-aligned squares at random positions), '
+                               'circle (disks at random positions). For square/circle, '
+                               'length_pct controls max side/diameter and orientation/'
+                               'thickness_pct are ignored.')
 
     ps_grp = p.add_argument_group('pixel_scramble options')
     ps_grp.add_argument('--pscramble-count-pct', type=float, default=3.0,
