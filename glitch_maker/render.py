@@ -21,8 +21,22 @@ from video import probe, open_reader, open_writer
 from effects import REGISTRY, PARAMETRIC
 
 
+def _has_audio_track(video_path: str) -> bool:
+    out = subprocess.run(
+        ['ffprobe', '-v', 'error', '-select_streams', 'a', '-show_entries',
+         'stream=codec_type', '-of', 'csv=p=0', video_path],
+        capture_output=True, text=True,
+    )
+    return bool(out.stdout.strip())
+
+
 def _extract_audio(video_path: str) -> str:
     """Extract the source audio track to a temp WAV; returns the WAV path."""
+    if not _has_audio_track(video_path):
+        raise SystemExit(
+            f'error: {video_path} has no audio track.\n'
+            f'  Supply an audio file via --audio PATH, or add a silent track to the source.'
+        )
     tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
     tmp.close()
     subprocess.check_call(
