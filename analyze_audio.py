@@ -9,10 +9,14 @@ import numpy as np
 from scipy.signal import find_peaks
 
 
+_FFPROBE = "ffprobe"
+_FFMPEG = "ffmpeg"
+
+
 def ffprobe_metadata(audio_path):
     out = subprocess.check_output(
         [
-            "ffprobe",
+            _FFPROBE,
             "-v",
             "error",
             "-show_entries",
@@ -37,7 +41,7 @@ def ffprobe_metadata(audio_path):
 
 def extract_pcm_mono(audio_path, sample_rate_hz, max_duration_sec=None):
     cmd = [
-        "ffmpeg",
+        _FFMPEG,
         "-v",
         "error",
         "-i",
@@ -426,7 +430,14 @@ def main():
     parser.add_argument("--frame-size", type=int, default=2048, help="Frame size in samples")
     parser.add_argument("--max-duration", type=float, default=None, help="Optional limit for analysis duration (seconds)")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON")
+    parser.add_argument("--ffmpeg", default="ffmpeg", help="Path to ffmpeg binary")
+    parser.add_argument("--ffprobe", default="ffprobe", help="Path to ffprobe binary")
     args = parser.parse_args()
+
+    # Set module-level binary paths from CLI args.
+    global _FFMPEG, _FFPROBE
+    _FFMPEG = args.ffmpeg
+    _FFPROBE = args.ffprobe
 
     if not args.input.exists():
         raise FileNotFoundError(f"Input file not found: {args.input}")

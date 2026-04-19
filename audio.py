@@ -23,7 +23,11 @@ EXTERNAL_ANALYZER = Path(__file__).resolve().parent / 'analyze_audio.py'
 
 
 class AudioFeatures:
-    def __init__(self, wav_path: str, fps: int = 60, analysis_json: str | None = None):
+    def __init__(self, wav_path: str, fps: int = 60, analysis_json: str | None = None,
+                 ffmpeg_bin: str = 'ffmpeg', ffprobe_bin: str = 'ffprobe'):
+        self._ffmpeg_bin = ffmpeg_bin
+        self._ffprobe_bin = ffprobe_bin
+
         data, sr = sf.read(wav_path, dtype='float32', always_2d=True)
         self.samples = data.mean(axis=1)
         self.sr = sr
@@ -69,11 +73,13 @@ class AudioFeatures:
             tmp.close()
             analysis_json = tmp.name
             print(f'[audio] running external analyzer -> {analysis_json}')
-            subprocess.check_call(
-                ['python3', str(EXTERNAL_ANALYZER),
-                 '--input', str(wav_path), '--output', analysis_json],
-                stdout=subprocess.DEVNULL,
-            )
+            cmd = ['python3', str(EXTERNAL_ANALYZER),
+                   '--input', str(wav_path), '--output', analysis_json]
+            if self._ffmpeg_bin != 'ffmpeg':
+                cmd.extend(['--ffmpeg', self._ffmpeg_bin])
+            if self._ffprobe_bin != 'ffprobe':
+                cmd.extend(['--ffprobe', self._ffprobe_bin])
+            subprocess.check_call(cmd, stdout=subprocess.DEVNULL)
             self._tmp_json = analysis_json
         else:
             self._tmp_json = None

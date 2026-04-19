@@ -21,18 +21,19 @@ from video import probe, open_reader, open_writer
 from effects import REGISTRY, PARAMETRIC
 
 
-def _has_audio_track(video_path: str) -> bool:
+def _has_audio_track(video_path: str, ffprobe_bin: str = 'ffprobe') -> bool:
     out = subprocess.run(
-        ['ffprobe', '-v', 'error', '-select_streams', 'a', '-show_entries',
+        [ffprobe_bin, '-v', 'error', '-select_streams', 'a', '-show_entries',
          'stream=codec_type', '-of', 'csv=p=0', video_path],
         capture_output=True, text=True,
     )
     return bool(out.stdout.strip())
 
 
-def _extract_audio(video_path: str) -> str:
+def _extract_audio(video_path: str, ffmpeg_bin: str = 'ffmpeg',
+                   ffprobe_bin: str = 'ffprobe') -> str:
     """Extract the source audio track to a temp WAV; returns the WAV path."""
-    if not _has_audio_track(video_path):
+    if not _has_audio_track(video_path, ffprobe_bin=ffprobe_bin):
         raise SystemExit(
             f'error: {video_path} has no audio track.\n'
             f'  Supply an audio file via --audio PATH, or add a silent track to the source.'
@@ -40,7 +41,7 @@ def _extract_audio(video_path: str) -> str:
     tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
     tmp.close()
     subprocess.check_call(
-        ['ffmpeg', '-y', '-v', 'error',
+        [ffmpeg_bin, '-y', '-v', 'error',
          '-i', video_path,
          '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
          tmp.name],
@@ -216,27 +217,30 @@ def render(source_path: str, out_path: str, stack: list,
            seed: int | None = None, crf: int = 18,
            profile_path: str | None = None,
            accumulate: bool = False, accumulate_reset_sec: float = 2.0,
-           accumulate_bleed: float = 0.0):
+           accumulate_bleed: float = 0.0,
+           ffmpeg_bin: str = 'ffmpeg', ffprobe_bin: str = 'ffprobe'):
     """Render with a pre-built stack of (name, params, instance) triples."""
     if seed is None:
         seed = int.from_bytes(os.urandom(4), 'big')
     np.random.seed(seed)
 
-    meta = probe(source_path)
+    meta = probe(source_path, ffprobe_bin=ffprobe_bin)
     print(f'[video] source: {source_path}')
     print(f'  {meta.width}x{meta.height} @ {meta.fps:.2f} fps  ~{meta.n_frames} frames  {meta.duration_sec:.2f}s')
 
     # Audio: extract from source unless user supplied override.
-    audio_src = audio_path or _extract_audio(source_path)
+    audio_src = audio_path or _extract_audio(source_path, ffmpeg_bin=ffmpeg_bin,
+                                              ffprobe_bin=ffprobe_bin)
     print(f'[audio] loading features from {audio_src}')
-    af = AudioFeatures(audio_src, fps=int(round(meta.fps)))
+    af = AudioFeatures(audio_src, fps=int(round(meta.fps)),
+                       ffmpeg_bin=ffmpeg_bin, ffprobe_bin=ffprobe_bin)
     section_frames = set(af.section_change_frames)
     print(f'  duration={af.duration_sec:.2f}s sections={len(section_frames)} beats={int(af.beat.sum())}')
 
     print(f'[stack] {[n for n, _, _ in stack]}')
 
-    reader, frame_nbytes = open_reader(source_path, meta)
-    writer = open_writer(source_path, out_path, meta, crf=crf)
+    reader, frame_nbytes = open_reader(source_path, meta, ffmpeg_bin=ffmpeg_bin)
+    writer = open_writer(source_path, out_path, meta, crf=crf, ffmpeg_bin=ffmpeg_bin)
 
     print(f'[render] writing {out_path}')
     if accumulate:
@@ -381,6 +385,10 @@ def main():
                    help='path to write render profile JSON (default: <output>.profile.json)')
     p.add_argument('--no-profile', action='store_true',
                    help='skip writing the profile JSON')
+    p.add_argument('--ffmpeg', default='ffmpeg', dest='ffmpeg_bin',
+                   help='path to ffmpeg binary (default: ffmpeg on PATH)')
+    p.add_argument('--ffprobe', default='ffprobe', dest='ffprobe_bin',
+                   help='path to ffprobe binary (default: ffprobe on PATH)')
     p.add_argument('--accumulate', action='store_true',
                    help='effects compound frame-over-frame instead of starting fresh. '
                         'Between resets the source "freezes" and damage accumulates, '
@@ -680,7 +688,8 @@ def main():
            seed=args.seed, crf=args.crf, profile_path=profile_path,
            accumulate=accumulate,
            accumulate_reset_sec=accumulate_reset_sec,
-           accumulate_bleed=accumulate_bleed)
+           accumulate_bleed=accumulate_bleed,
+           ffmpeg_bin=args.ffmpeg_bin, ffprobe_bin=args.ffprobe_bin)
 
 
 if __name__ == '__main__':

@@ -19,9 +19,9 @@ class VideoMeta:
     n_frames: int
 
 
-def probe(path: str) -> VideoMeta:
+def probe(path: str, ffprobe_bin: str = 'ffprobe') -> VideoMeta:
     out = subprocess.check_output(
-        ['ffprobe', '-v', 'error',
+        [ffprobe_bin, '-v', 'error',
          '-select_streams', 'v:0',
          '-show_entries', 'stream=width,height,r_frame_rate,nb_frames,duration',
          '-show_entries', 'format=duration',
@@ -34,10 +34,8 @@ def probe(path: str) -> VideoMeta:
     height = int(stream['height'])
     num, den = stream['r_frame_rate'].split('/')
     fps = float(num) / float(den)
-    # duration can live on either stream or format; prefer format (container).
     fmt_dur = data.get('format', {}).get('duration')
     duration = float(fmt_dur if fmt_dur is not None else stream.get('duration', 0.0))
-    # nb_frames is unreliable for some containers; compute from duration as fallback.
     try:
         n_frames = int(stream.get('nb_frames', 0)) or int(round(duration * fps))
     except (TypeError, ValueError):
@@ -45,10 +43,10 @@ def probe(path: str) -> VideoMeta:
     return VideoMeta(width, height, fps, duration, n_frames)
 
 
-def open_reader(path: str, meta: VideoMeta):
+def open_reader(path: str, meta: VideoMeta, ffmpeg_bin: str = 'ffmpeg'):
     """Return (proc, frame_nbytes). Read meta.width*meta.height*3 bytes per frame."""
     proc = subprocess.Popen(
-        ['ffmpeg', '-v', 'error',
+        [ffmpeg_bin, '-v', 'error',
          '-i', path,
          '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
         stdout=subprocess.PIPE,
@@ -56,10 +54,11 @@ def open_reader(path: str, meta: VideoMeta):
     return proc, meta.width * meta.height * 3
 
 
-def open_writer(audio_path: str, out_path: str, meta: VideoMeta, crf: int = 18):
+def open_writer(audio_path: str, out_path: str, meta: VideoMeta,
+                crf: int = 18, ffmpeg_bin: str = 'ffmpeg'):
     """Pipe rgb24 frames into ffmpeg which muxes them with the source audio."""
     proc = subprocess.Popen(
-        ['ffmpeg', '-y', '-v', 'error',
+        [ffmpeg_bin, '-y', '-v', 'error',
          '-f', 'rawvideo', '-pix_fmt', 'rgb24',
          '-s', f'{meta.width}x{meta.height}',
          '-r', str(meta.fps),
